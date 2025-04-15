@@ -1,5 +1,16 @@
-# Vue 3 + Vite
+# SHIFT - Event Management Portal
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+## Overview
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+SHIFT is a full-stack web application designed to facilitate event management in smart cities. The platform allows users to create, manage, and participate in various events, promoting community involvement and enhancing the overall quality of life for urban residents.
+
+## Technologies Used
+
+- **Frontend**: Vue.js, TailwindCSS
+- **Backend**: Express.js
+- **Database**: MySQL
+
+## Usage
+
+- Users can create their own events, personalize and edit them, analyze statistics related to their events, and participate in different events in their area.
+- Join the cultural shift and enhance your community engagement with SHIFT!
