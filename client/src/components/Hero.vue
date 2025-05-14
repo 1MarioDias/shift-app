@@ -15,13 +15,13 @@
     <div class="absolute inset-0 flex justify-center items-center z-20 px-4">
       <div class="flex flex-col gap-6 items-center text-center max-w-[1000px] w-full">
        <h1
-          class="text-[64px] font-bold text-white leading-tight max-md:text-5xl max-sm:text-4xl transition-transform transition-colors duration-300 hover:scale-105 hover:text-[#FFD300]"
+          class="text-[64px] font-bold text-white leading-tight max-md:text-5xl max-sm:text-4xl duration-300 hover:scale-105 hover:text-[#FFD300]"
         >
           SHIFT <span class="font-display">YOUR GEARS</span>!
         </h1>
 
         <h2
-          class="text-2xl text-white max-md:text-xl max-sm:text-lg transition-transform transition-colors duration-300 hover:scale-105 hover:text-[#FFD300]"
+          class="text-2xl text-white max-md:text-xl max-sm:text-lg  duration-300 hover:scale-105 hover:text-[#FFD300]"
         >
           Live every experience.
         </h2>
