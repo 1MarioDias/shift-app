@@ -3,31 +3,28 @@
     <!-- Fundo de vídeo -->
     <VideoBackground />
 
-    <!-- Conteúdo principal -->
-    <div class="content">
+ <div class="bg-neutral-900 min-h-[screen]">
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <div class="flex flex-col">
       <Navbar />
-      <router-view />
+      <Footer />
     </div>
+  </div>
   </div>
 </template>
 
 <script>
 import VideoBackground from "./components/VideoBackground.vue";
 import Navbar from "./components/Navbar.vue";
-import Hero from "./components/Hero.vue";
-import AboutSection from "./components/AboutSection.vue";
-import FeaturedEvents from "./components/FeaturedEvents.vue";
-import Footer from "./components/Footer.vue";
 
 export default {
   name: "LandingPage",
   components: {
     VideoBackground,
-    Navbar,
-    Hero,
-    AboutSection,
-    FeaturedEvents,
-    Footer,
+    Navbar
   },
   data() {
     return {
