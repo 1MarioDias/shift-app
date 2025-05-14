@@ -3,7 +3,6 @@
     <VideoBackground />
     <div class="pt-[100px]">
       <Navbar />
-      <router-view />
     </div>
   </div>
 </template>
