@@ -1,7 +1,7 @@
 <template>
   <div id="app" class="app-wrapper">
     <VideoBackground />
-    <div class="pt-[100px]">
+    <div class="pt-[150px]">
       <Navbar />
     </div>
   </div>
