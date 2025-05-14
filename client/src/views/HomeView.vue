@@ -1,7 +1,6 @@
 <template>
-  <VideoBackground />
-  <div class="bg-neutral-900 min-h-[screen]">
-    <div class="flex flex-col">
+  <div class="relative">
+    <div class="relative z-10 flex flex-col">
       <Hero :image="heroImage" />
       <AboutSection :image="aboutImage" />
       <FeaturedEvents :events="featuredEvents" />
@@ -10,8 +9,8 @@
   </div>
 </template>
 
+
 <script>
-  import VideoBackground from "../components/VideoBackground.vue";
   import Hero from "../components/Hero.vue";
   import AboutSection from "../components/AboutSection.vue";
   import FeaturedEvents from "../components/FeaturedEvents.vue";
