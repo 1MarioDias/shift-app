@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-neutral-900 min-h-[screen]">
+  <div class="">
     <link
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;400;500;600;700&display=swap"
       rel="stylesheet"
