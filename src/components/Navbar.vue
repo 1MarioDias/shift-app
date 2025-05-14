@@ -24,8 +24,6 @@
     </div>
     <div class="flex gap-5 items-center">
       <!-- add if statement, if user is logged in redirects to user page, otherwise it will redirect to login page -->
-      <!-- not sure if this works like this -->
-      <!-- IT WORKS -->
         <RouterLink to="/login">
           <button class="text-stone-50" v-html="userIcon"></button>
         </RouterLink>
