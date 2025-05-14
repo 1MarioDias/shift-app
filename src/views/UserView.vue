@@ -1,9 +1,9 @@
 <template>
-
+  <UserInfo></UserInfo>
 </template>
 
 <script>
-  import Hero from "../components/Hero.vue";
+  import UserInfo from '../components/UserInfo.vue'
   import AboutSection from "../components/AboutSection.vue";
   import FeaturedEvents from "../components/FeaturedEvents.vue";
   import Footer from "../components/Footer.vue";

@@ -12,11 +12,12 @@
           >
             SHIFT YOUR GEARS!
           </h1>
+          
           <h2 class="text-3xl text-stone-50 max-md:text-2xl max-sm:text-lg">
             Live every experience!
           </h2>
           <SearchBar
-            placeholder="Find your city"
+          placeholder="Find your city"
             containerClass="h-10 w-[664px] max-md:w-[500px] max-sm:w-[90%] shadow-sm bg-stone-50 bg-opacity-80 rounded-[30px]"
             inputClass="text-base text-stone-500 ml-2.5"
           />
