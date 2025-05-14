@@ -1,23 +1,16 @@
 <template>
-  <div class="bg-neutral-900 min-h-[screen]">
-    <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <div class="flex flex-col">
-      <Navbar />
-    </div>
-  </div>
-</template>
+
+</template>,
 
 <script>
-
-  import Navbar from "./components/Navbar.vue";
+  import Hero from "../components/Hero.vue";
+  import AboutSection from "../components/AboutSection.vue";
+  import FeaturedEvents from "../components/FeaturedEvents.vue";
+  import Footer from "../components/Footer.vue";
 
   export default {
-    name: "LandingPage",
+    name: "User",
     components: {
-      Navbar,
       Hero,
       AboutSection,
       FeaturedEvents,

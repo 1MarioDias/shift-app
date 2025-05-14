@@ -3,12 +3,12 @@
     class="flex justify-between items-center px-16 py-10 max-md:px-8 max-sm:px-5"
   >
     <div class="logo">
-      <a href="">
+      <RouterLink to="/">
         <img
         src="/public/Logo.svg"
         alt="Logo"
         class="object-contain shrink-0 self-stretch my-auto max-w-full aspect-[2.62] w-[105px]"/>
-      </a>
+      </RouterLink>
     </div>
 
     <div class="flex flex-1 justify-center max-md:hidden">
@@ -22,21 +22,32 @@
         </template>
       </SearchBar>
     </div>
-
     <div class="flex gap-5 items-center">
-      <button class="text-stone-50" v-html="userIcon"></button>
-      <button class="flex gap-2 items-center px-5 py-2 bg-white rounded-2xl">
-        <span class="text-xs font-medium text-black">Create Event</span>
-        <div class="flex gap-1 items-center">
-          <div class="bg-black rounded-sm h-[1.5px] w-[7.8px]"></div>
-          <div class="bg-black rounded-sm h-[7.8px] w-[1.5px]"></div>
-        </div>
-      </button>
-    </div>
+      <!-- add if statement, if user is logged in redirects to user page, otherwise it will redirect to login page -->
+      <!-- not sure if this works like this -->
+      <!-- IT WORKS -->
+        <RouterLink to="/login">
+          <button class="text-stone-50" v-html="userIcon"></button>
+        </RouterLink>
+        <!-- redirect to /login if user is not logged in -->
+        <RouterLink to="/create">
+          <button class="flex gap-2 items-center px-5 py-2 bg-white rounded-2xl">
+            <span class="text-xs font-medium text-black">Create Event</span>
+            <div class="flex gap-1 items-center">
+              <div class="bg-black rounded-sm h-[1.5px] w-[7.8px]"></div>
+              <div class="bg-black rounded-sm h-[7.8px] w-[1.5px]"></div>
+            </div>
+          </button>
+        </RouterLink>
+      </div>
   </nav>
+
+  <RouterView />
 </template>
 
 <script>
+// i might have to bring this back to App.vue
+import { RouterLink, RouterView } from 'vue-router'
 import SearchBar from "./SearchBar.vue";
 
 export default {
