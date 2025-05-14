@@ -3,7 +3,8 @@
     <!-- Fundo de vídeo -->
     <VideoBackground />
 
- <div class="bg-neutral-900 min-h-[screen]">
+    <!-- Conteúdo principal -->
+    <div class="content">
     <link
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;400;500;600;700&display=swap"
       rel="stylesheet"
@@ -12,7 +13,7 @@
       <Navbar />
       <Footer />
     </div>
-  </div>
+    </div>
   </div>
 </template>
 
