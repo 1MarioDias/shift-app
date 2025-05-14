@@ -6,15 +6,12 @@
     />
     <div class="flex flex-col">
       <Navbar />
-      <Hero :image="heroImage" />
-      <AboutSection :image="aboutImage" />
-      <FeaturedEvents :events="featuredEvents" />
-      <Footer />
     </div>
   </div>
 </template>
 
 <script>
+
   import Navbar from "./components/Navbar.vue";
   import Hero from "./components/Hero.vue";
   import AboutSection from "./components/AboutSection.vue";
