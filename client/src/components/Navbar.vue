@@ -1,11 +1,11 @@
 <template>
   <nav
-    class="flex justify-between items-center px-16 py-10 max-md:px-8 max-sm:px-5"
+    class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-16 py-10 max-md:px-8 max-sm:px-5"
   >
     <div class="logo">
       <RouterLink to="/">
         <img
-        src="/public/Logo.svg"
+        src="/public/logo.svg"
         alt="Logo"
         class="object-contain shrink-0 self-stretch my-auto max-w-full aspect-[2.62] w-[105px]"/>
       </RouterLink>

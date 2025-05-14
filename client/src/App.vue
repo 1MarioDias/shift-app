@@ -6,7 +6,6 @@
     <!-- Conteúdo principal -->
     <div class="content">
       <Navbar />
-      <router-view />
     </div>
   </div>
 </template>
