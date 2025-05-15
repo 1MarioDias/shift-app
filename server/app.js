@@ -4,25 +4,40 @@ const express = require('express');
 require('dotenv').config();
 
 const app = express();
-const port = process.env.PORT;	// use environment variables
+const port = process.env.PORT;
 const host = process.env.HOST;
 
+// CORS middleware - Move this BEFORE routes
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
 
 app.use(express.json());
 
 // middleware for ALL routes
 app.use((req, res, next) => {
     const start = Date.now();
-    res.on("finish", () => { // finish event is emitted once the response is sent to the client
-        const diffSeconds = (Date.now() - start) / 1000; // figure out how many seconds elapsed
+    res.on("finish", () => {
+        const diffSeconds = (Date.now() - start) / 1000;
         console.log(`Request: ${req.method} ${req.originalUrl} completed in ${diffSeconds} seconds`);
     });
     next()
-})
+});
 
-
-// use route middleware for /posts requests
+// use route middleware for /events requests
 app.use('/events', require('./routes/events.routes.js'));
+
+//handle invalid routes (404)    
+app.use((req, res, next) => {
+    res.status(404).json({ message: `The requested resource was not found: ${req.method} ${req.originalUrl}` });
+});
 
 //handle invalid routes (404)    
 app.use((req, res, next) => {

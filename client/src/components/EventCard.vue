@@ -1,33 +1,34 @@
 <template>
-  <article class="relative">
-    <img
-      :src="image"
-      :alt="title"
-      class="w-full h-[360px] object-cover rounded-[20px]"
-    />
-    <div class="flex absolute inset-0 flex-col justify-between p-5">
-      <div class="flex justify-between">
-        <h3 class="text-xs font-bold text-stone-50">{{ type }}</h3>
-        <div class="flex gap-3">
-          <button class="text-stone-50">
-            <div v-html="heartIcon"></div>
-          </button>
-          <button class="text-stone-50">
-            <div v-html="shareIcon"></div>
-          </button>
+    <article class="relative">
+        <img
+            :src="`/client/public/${image}`"
+            :alt="title"
+            class="w-full h-[360px] object-cover rounded-[20px]"
+        />
+        <div class="flex absolute inset-0 flex-col justify-between p-5">
+            <div class="flex justify-between">
+                <h3 class="text-xs font-bold text-stone-50">{{ type }}</h3>
+                <div class="flex gap-3">
+                    <button class="text-stone-50">
+                        <div v-html="heartIcon"></div>
+                    </button>
+                    <button class="text-stone-50">
+                        <div v-html="shareIcon"></div>
+                    </button>
+                </div>
+            </div>
+            <div class="flex flex-col gap-2">
+                <h2 class="text-lg font-bold text-stone-50">{{ title }}</h2>
+                <time class="text-xs font-semibold text-stone-50">{{ date }}</time>
+                <p class="text-xs text-stone-50">{{ price }}</p>
+                <p class="text-xs text-stone-50">by {{ author }}</p>
+                <div class="flex gap-2 items-center">
+                    <div v-html="userIcon"></div>
+                    <p class="text-xs font-semibold text-white">{{ subscribers }} views</p>
+                </div>
+            </div>
         </div>
-      </div>
-      <div class="flex flex-col gap-2">
-        <time class="text-xs font-semibold text-stone-50">{{ date }}</time>
-        <p class="text-xs text-stone-50">{{ price }}</p>
-        <p class="text-xs text-stone-50">by {{ author }}</p>
-        <div class="flex gap-2 items-center">
-          <div v-html="userIcon"></div>
-          <p class="text-xs font-semibold text-white">{{ subscribers }} subscribers</p>
-        </div>
-      </div>
-    </div>
-  </article>
+    </article>
 </template>
 
 <script>
