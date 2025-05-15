@@ -8,6 +8,7 @@
 </template>
 
 
+
 <script>
 import VideoBackground from "./components/VideoBackground.vue";
 import Navbar from "./components/Navbar.vue";

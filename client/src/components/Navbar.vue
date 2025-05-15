@@ -3,13 +3,16 @@
     class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-16 py-6 max-md:px-8 max-sm:px-5"
   >
     <!-- Logo -->
-    <div class="logo">
-      <RouterLink to="/">
-        <img
-          src="/public/LogoWhite.svg"
-          alt="Logo"
-          class="object-contain shrink-0 self-stretch my-auto max-w-full aspect-[2.62] w-[105px]"
-        />
+    <div class="logo transition duration-300">
+      <RouterLink to="/" class="group block w-[105px] h-[40px]">
+        <div
+          class="w-full h-full bg-no-repeat bg-contain transition-all duration-300"
+          :class="[
+            isHovered ? 'bg-[url(/LogoBlue.svg)]' : 'bg-[url(/LogoWhite.svg)]'
+          ]"
+          @mouseenter="isHovered = true"
+          @mouseleave="isHovered = false"
+        ></div>
       </RouterLink>
     </div>
 
@@ -40,12 +43,10 @@
 
       <!-- Botão Create Event -->
       <RouterLink to="/create">
-        <button class="flex gap-2 items-center px-5 py-2 bg-[#FAF9F6] rounded-2xl">
-          <span class="text-xs font-medium text-black">Create Event</span>
-          <div class="flex gap-1 items-center">
-            <div class="bg-black rounded-sm h-[1.5px] w-[7.8px]"></div>
-            <div class="bg-black rounded-sm h-[7.8px] w-[1.5px]"></div>
-          </div>
+        <button
+          class="flex items-center justify-center gap-2 px-5 py-2 rounded-2xl bg-[#FAF9F6] text-black transition duration-300 hover:bg-[#426CFF] hover:text-white"
+        >
+          <span class="text-xs font-medium">Create Event +</span>
         </button>
       </RouterLink>
     </div>
@@ -53,6 +54,7 @@
 
   <RouterView />
 </template>
+
 
 <script>
 import { RouterLink, RouterView } from 'vue-router'
@@ -67,6 +69,7 @@ export default {
   },
   data() {
     return {
+      isHovered: false,
       searchIcon: `
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="11" cy="11" r="8" stroke="#FAF9F6" stroke-width="2"/>

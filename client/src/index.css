@@ -1,1 +1,7 @@
 @import "tailwindcss";
+
+/* deixa icones brancos (se for preciso adiciona-se mais) */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}

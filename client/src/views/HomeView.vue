@@ -1,10 +1,10 @@
 <template>
-  <div class="">
+  <div class="relative">
     <link
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <div class="flex flex-col">
+    <div class="relative z-10 flex flex-col">
       <Hero :image="heroImage" />
       <AboutSection :image="aboutImage" />
       <FeaturedEvents :events="featuredEvents" />
@@ -12,6 +12,7 @@
     </div>
   </div>
 </template>
+
 
 <script>
   import Hero from "../components/Hero.vue";
