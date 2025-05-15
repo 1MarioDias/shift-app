@@ -12,7 +12,6 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    // Handle preflight requests
     if (req.method === 'OPTIONS') {
         return res.sendStatus(200);
     }
@@ -33,6 +32,8 @@ app.use((req, res, next) => {
 
 // use route middleware for /events requests
 app.use('/events', require('./routes/events.routes.js'));
+
+app.use('/', require('./routes/users.routes.js'));
 
 //handle invalid routes (404)    
 app.use((req, res, next) => {
