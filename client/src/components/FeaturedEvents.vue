@@ -1,5 +1,5 @@
 <template>
-    <section class="px-20 max-md:px-10 max-sm:px-5">
+    <section class="mt-40 px-20 max-md:px-10 max-sm:px-5">
         <h2 class="mb-16 text-5xl font-bold text-center text-stone-50 max-md:text-4xl max-sm:text-3xl">
             FEATURED EVENTS
         </h2>
