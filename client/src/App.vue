@@ -1,21 +1,14 @@
 <template>
   <div id="app" class="app-wrapper">
-    <!-- Fundo de vídeo -->
     <VideoBackground />
-
-    <!-- Conteúdo principal -->
-    <div class="content">
-    <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <div class="flex flex-col">
+    <div class="pt-[150px]">
       <Navbar />
-      <Footer />
     </div>
-    </div>
+    <router-view />
   </div>
 </template>
+
+
 
 <script>
 import VideoBackground from "./components/VideoBackground.vue";
