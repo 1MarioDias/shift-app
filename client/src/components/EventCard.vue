@@ -1,5 +1,5 @@
 <template>
-    <article class="relative">
+    <article class="mt-15 relative">
         <img
             :src="`../../public/images/${image}`"
             :alt="title"
