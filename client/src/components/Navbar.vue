@@ -6,7 +6,7 @@
     <div class="logo">
       <RouterLink to="/">
         <img
-          src="/public/logo.svg"
+          src="/public/LogoWhite.svg"
           alt="Logo"
           class="object-contain shrink-0 self-stretch my-auto max-w-full aspect-[2.62] w-[105px]"
         />

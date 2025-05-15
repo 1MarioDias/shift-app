@@ -1,37 +1,41 @@
 <template>
-    <footer class="mt-24">
-      <div class="py-10 bg-stone-50">
-        <div
-          class="px-20 mx-auto max-w-none max-md:px-10 max-md:max-w-[991px] max-sm:px-5 max-sm:max-w-screen-sm"
-        >
-          <div class="flex justify-between items-center">
-            <nav class="flex gap-5">
-              <a href="#" class="text-sm text-neutral-900">Homepage</a>
-              <a href="#" class="text-sm text-neutral-900">About</a>
-              <a href="#" class="text-sm text-neutral-900">Contacts</a>
-            </nav>
-  
-            <div class="logo" v-html="logoSvg"></div>
-  
-            <div class="flex gap-5">
-              <a href="#" class="text-neutral-900"
-                ><i class="ti ti-brand-tiktok"></i
-              ></a>
-              <a href="#" class="text-neutral-900"
-                ><i class="ti ti-brand-instagram"></i
-              ></a>
-              <a href="#" class="text-neutral-900"
-                ><i class="ti ti-brand-twitter"></i
-              ></a>
-              <a href="#" class="text-neutral-900"
-                ><i class="ti ti-brand-facebook"></i
-              ></a>
-            </div>
-          </div>
+  <footer class="bg-stone-50 text-black mt-90">
+    <div class="px-30 py-40 max-md:px-10 max-sm:px-5">
+      <div class="flex flex-wrap justify-between items-start gap-10">
+        <!-- Navigation Links -->
+        <nav class="flex gap-6 text-lg font-medium">
+          <a href="#" class="hover:text-[#426CFF] transition">Homepage</a>
+          <a href="#" class="hover:text-[#426CFF] transition">About</a>
+          <a href="#" class="hover:text-[#426CFF] transition">Contacts</a>
+        </nav>
+
+        <!-- Right side (Logo) -->
+        <div class="flex flex-col items-end gap-5">
+          <!-- Logo -->
+          <img src="/public/Logo.svg" alt="Logo" class="w-[105px]" />
         </div>
       </div>
-    </footer>
-  </template>
+
+      <!-- Divider -->
+      <hr class="my-8 border-black" />
+
+      <!-- Bottom section -->
+      <div class="flex flex-wrap justify-between items-start text-sm">
+        <span>&copy; 2025 Shift, all rights reserved</span>
+
+        <!-- Social Media Icons -->
+        <div class="flex gap-5 text-xl mt-4 md:mt-0">
+          <a href="#"><img src="/images/tiktok.svg" class="w-6 h-6" /></a>
+          <a href="#"><img src="/images/instagram.svg" class="w-6 h-6" /></a>
+          <a href="#"><img src="/images/twitter.svg" class="w-6 h-6" /></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+</template>
+
+
+
   
 <script>
   export default {
