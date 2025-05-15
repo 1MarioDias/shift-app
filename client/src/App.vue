@@ -4,7 +4,6 @@
     <div class="pt-[150px]">
       <Navbar />
     </div>
-    <router-view />
   </div>
 </template>
 
