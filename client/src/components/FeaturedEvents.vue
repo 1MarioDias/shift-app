@@ -13,14 +13,13 @@
             <EventCard 
                 v-for="event in events" 
                 :key="event.eventId"
-                :image="event.image || '/default-event.jpg'"
+                :image="event.image || `../../public/images/cardImage.png`"
                 :type="event.eventType"
                 :date="formatDate(event.date)"
-                :price="'Free'"
+                :location="event.location"
                 :author="'SHIFT'"
-                :subscribers="event.visualizacoes + ''"
                 :title="event.title"
-            />
+                />
         </div>
     </section>
 </template>
@@ -56,7 +55,7 @@ export default {
                 const response = await eventosService.getFeaturedEvents();
                 this.events = response.data;
             } catch (err) {
-                this.error = "Failed to load events";
+                this.error = "Failed to load events. Launch the server and try again.";
                 console.error(err);
             } finally {
                 this.loading = false;

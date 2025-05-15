@@ -5,8 +5,8 @@ export const eventosService = {
         const queryParams = new URLSearchParams({
             page,
             pageSize,
-            sortBy: 'visualizacoes',
-            order: 'desc'
+            sortBy: 'data',
+            order: 'asc'
         });
 
         const response = await fetch(`${API_URL}/events?${queryParams}`);

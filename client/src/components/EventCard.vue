@@ -1,7 +1,7 @@
 <template>
     <article class="relative">
         <img
-            :src="`/client/public/${image}`"
+            :src="`../../public/images/${image}`"
             :alt="title"
             class="w-full h-[360px] object-cover rounded-[20px]"
         />
@@ -20,11 +20,10 @@
             <div class="flex flex-col gap-2">
                 <h2 class="text-lg font-bold text-stone-50">{{ title }}</h2>
                 <time class="text-xs font-semibold text-stone-50">{{ date }}</time>
-                <p class="text-xs text-stone-50">{{ price }}</p>
-                <p class="text-xs text-stone-50">by {{ author }}</p>
+                <p class="text-xs text-stone-50">{{ location }}</p>
                 <div class="flex gap-2 items-center">
                     <div v-html="userIcon"></div>
-                    <p class="text-xs font-semibold text-white">{{ subscribers }} views</p>
+                    <p class="text-xs font-semibold text-white">by {{ author }}</p>
                 </div>
             </div>
         </div>
@@ -47,15 +46,11 @@
         type: String,
         required: true
       },
-      price: {
+      location: {
         type: String,
         required: true
       },
       author: {
-        type: String,
-        required: true
-      },
-      subscribers: {
         type: String,
         required: true
       },
