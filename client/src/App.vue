@@ -2,12 +2,11 @@
   <div id="app" class="app-wrapper">
     <VideoBackground />
     <div class="pt-[150px]">
-      <Navbar />
-      <RouterView />
+      <Navbar :profileImage="profileImage" />
+      <RouterView :profileImage="profileImage" @update-image="profileImage = $event" />
     </div>
   </div>
 </template>
-
 
 
 <script>
@@ -22,12 +21,13 @@ export default {
   },
   data() {
     return {
-      heroImage: "public/images/heroImage.png",
-      aboutImage: "public/images/aboutImage.png",
+      heroImage: "/images/heroImage.png",
+      aboutImage: "/images/aboutImage.png",
+      profileImage: "/defaultProfile.svg", 
       featuredEvents: [
         {
           id: 1,
-          image: "public/images/cardImage.png",
+          image: "/images/cardImage.png",
           type: "Event",
           date: "Wed, Apr 2 • 7:00 PM",
           price: "from 99.00€",
@@ -38,6 +38,12 @@ export default {
       ],
     };
   },
+
+  //profile picture
+  mounted() {
+    const stored = localStorage.getItem("userProfileImage");
+    this.profileImage = stored ? stored : "/defaultProfile.svg";
+  }
 };
 </script>
 
