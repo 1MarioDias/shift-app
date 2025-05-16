@@ -1,5 +1,34 @@
 <template>
   <div class="min-h-screen flex items-center justify-center px-4">
+    <!-- modal das notificações de login/register -->
+    <div 
+      v-if="notification.show" 
+      :class="[
+        'fixed top-4 right-4 p-4 rounded-xl shadow-lg max-w-sm w-full z-50 transition-all duration-300 transform',
+        notification.type === 'success' 
+          ? 'bg-[#1C1C1E] border border-[#FFD300]' 
+          : 'bg-[#1C1C1E] border border-[#FF004D]'
+      ]"
+    >
+      <div class="flex items-start">
+        <div class="ml-3 w-full">
+          <p 
+            :class="[
+              'text-sm font-medium',
+              notification.type === 'success' ? 'text-[#FFD300]' : 'text-[#FF004D]'
+            ]"
+          >
+            {{ notification.message }}
+          </p>
+        </div>
+        <button 
+          @click="closeNotification"
+          class="ml-4 text-stone-400 hover:text-stone-50"
+        >
+          ×
+        </button>
+      </div>
+    </div>
     <VideoBackground />
     <div class="max-w-md w-full space-y-8 relative">
       <div class="bg-white bg-opacity-10 p-8 rounded-2xl backdrop-blur-md shadow-xl">
@@ -9,7 +38,6 @@
           </RouterLink>
         </div>
 
-        <!-- Toggle Buttons -->
         <div class="flex mb-8">
           <button 
             @click="activeForm = 'login'"
@@ -35,7 +63,6 @@
           </button>
         </div>
 
-        <!-- Login Form -->
         <form v-show="activeForm === 'login'" @submit.prevent="handleLogin" class="space-y-6">
           <div>
             <label for="login-email" class="block text-sm font-medium text-[#FF004D] text-right mb-2">Email</label>
@@ -70,7 +97,6 @@
           </button>
         </form>
 
-        <!-- Register Form -->
         <form v-show="activeForm === 'register'" @submit.prevent="handleRegister" class="space-y-6">
           <div>
             <label for="register-username" class="block text-sm font-medium text-[#FF004D] text-right mb-2">Username</label>
@@ -129,12 +155,10 @@
           </button>
         </form>
 
-        <!-- Error Message -->
         <div v-if="error" class="mt-4 text-red-400 text-sm text-center">
           {{ error }}
         </div>
 
-        <!-- Success Message -->
         <div v-if="success" class="mt-4 text-green-400 text-sm text-center">
           {{ success }}
         </div>
@@ -169,25 +193,61 @@ export default {
         email: '',
         password: '',
         confirmPassword: ''
+      },
+      notification: {
+        show: false,
+        message: '',
+        type: 'success',
+        timeout: null
       }
     }
   },
   methods: {
+    showNotification(message, type = 'success') {
+      if (this.notification.timeout) {
+        clearTimeout(this.notification.timeout);
+      }
+
+      this.notification = {
+        show: true,
+        message,
+        type,
+        timeout: setTimeout(() => {
+          this.closeNotification();
+        }, 10000)
+      };
+    },
+
+    closeNotification() {
+      this.notification.show = false;
+      if (this.notification.timeout) {
+        clearTimeout(this.notification.timeout);
+      }
+    },
     async handleLogin() {
       try {
         this.loading = true;
         this.error = null;
-        this.success = null;
 
         await authService.login({
           email: this.loginForm.email,
           password: this.loginForm.password
         });
 
-        // Redirect to home page or dashboard
-        this.$router.push('/');
+        this.showNotification('Login successful! Welcome back.', 'success');
+                
+        this.loginForm = {
+            email: '',
+            password: ''
+        };
+
+        // USAR DEPOIS: redirect depois da notificação desaparecer
+        // setTimeout(() => {
+        //     this.$router.push('/');
+        // }, 2000);
+
       } catch (err) {
-        this.error = err.message;
+        this.showNotification(err.message, 'error');
       } finally {
         this.loading = false;
       }
@@ -196,19 +256,20 @@ export default {
       try {
         this.loading = true;
         this.error = null;
-        this.success = null;
 
         if (this.registerForm.password !== this.registerForm.confirmPassword) {
           throw new Error('Passwords do not match');
         }
 
-        await authService.register({
+        const result = await authService.register({
           username: this.registerForm.username,
           email: this.registerForm.email,
           password: this.registerForm.password
         });
 
-        this.success = 'Account created successfully! Please log in.';
+        this.showNotification('Account created successfully! Please log in.', 'success');
+        
+        // Reset form e muda para a página de login
         this.activeForm = 'login';
         this.registerForm = {
           username: '',
@@ -217,7 +278,7 @@ export default {
           confirmPassword: ''
         };
       } catch (err) {
-        this.error = err.message;
+        this.showNotification(err.message, 'error');
       } finally {
         this.loading = false;
       }
