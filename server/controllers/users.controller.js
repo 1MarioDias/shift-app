@@ -15,17 +15,20 @@ exports.register = async (req, res, next) => {
         const user = await User.create({
             nome: username,
             email,
-            password
+            password,
+            dataRegisto: new Date(),
         });
 
         // resposta
         res.status(201).json({
             userId: user.idUtilizador,
             name: user.nome,
-            email: user.email
+            email: user.email,
+            dataRegisto: user.dataRegisto
         });
 
     } catch (error) {
+        console.error('Registration error:', error);
         if (error.name === 'SequelizeUniqueConstraintError') {
             return next(new ErrorHandler(400, 'The provided EMAIL is already in use.'));
         }
@@ -35,10 +38,8 @@ exports.register = async (req, res, next) => {
         if (error.statusCode === 400) {
             return next(error);
         }
-
-        console.log(User);
         
-        next(new ErrorHandler(500, `Could not create user due to a database issue.`));
+        next(new ErrorHandler(500, `Could not create user due to a database issue: ${error.message}`));
     }
 };
 

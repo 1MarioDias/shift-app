@@ -37,6 +37,20 @@ const User = db.sequelize.define('utilizadores', {
                 msg: 'The PASSWORD field cannot be empty.'
             }
         }
+    },
+    dataRegisto: {
+        type: DataTypes.DATE,
+        allowNull: false
+    },
+    tipoUtilizador: {
+        type: DataTypes.STRING(50),
+        allowNull: false,
+        defaultValue: 'Utilizador'
+    },
+    preferenciasNotificacoes: {
+        type: DataTypes.STRING(50),
+        allowNull: false,
+        defaultValue: 'push'
     }
 }, {
     timestamps: false,

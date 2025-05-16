@@ -2,42 +2,78 @@ const API_URL = 'http://127.0.0.1:3000';
 
 export const authService = {
     async login(credentials) {
-        const response = await fetch(`${API_URL}/auth/login`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(credentials)
-        });
+        try {
+            const response = await fetch(`${API_URL}/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(credentials)
+            });
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.errorMessage || 'Failed to login');
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(
+                    data.errorMessage || 
+                    data.error || 
+                    'Login failed. Please check your credentials and try again.'
+                );
+            }
+
+            if (!data.accessToken) {
+                throw new Error('Server response missing authentication token.');
+            }
+
+            localStorage.setItem('token', data.accessToken);
+            return data;
+        } catch (error) {
+            if (error instanceof TypeError) {
+                throw new Error('Unable to connect to the server. Please check your internet connection.');
+            }
+            throw error;
         }
-
-        const data = await response.json();
-        localStorage.setItem('token', data.accessToken);
-        return data;
     },
 
     async register(userData) {
-        const response = await fetch(`${API_URL}/auth/register`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(userData)
-        });
+        try {
+            const response = await fetch(`${API_URL}/users`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(userData)
+            });
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.errorMessage || 'Failed to register');
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(
+                    data.errorMessage || 
+                    data.error || 
+                    this.getRegistrationErrorMessage(response.status)
+                );
+            }
+
+            return data;
+        } catch (error) {
+            if (error instanceof TypeError) {
+                throw new Error('Unable to connect to the server. Please check your internet connection.');
+            }
+            throw error;
         }
-
-        return response.json();
     },
 
     logout() {
         localStorage.removeItem('token');
+    },
+
+    getRegistrationErrorMessage(status) {
+        const errorMessages = {
+            400: 'Invalid registration information provided.',
+            409: 'An account with this email already exists.',
+            500: 'Server error occurred during registration.'
+        };
+        return errorMessages[status] || 'Registration failed. Please try again.';
     }
 };
