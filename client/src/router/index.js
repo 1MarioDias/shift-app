@@ -28,7 +28,27 @@ const router = createRouter ({
             name: 'event',
             component: () => import('../views/EventView.vue')
         },
+        {
+            path: '/admin',
+            name: 'admin',
+            component: () => import('../views/admin/AdminView.vue'),
+            // meta: { requiresAdmin: true }
+        }
     ]
+})
+
+router.beforeEach((to, from, next) => {
+  if (to.matched.some(record => record.meta.requiresAdmin)) {
+    // Check if user is admin
+    const isAdmin = localStorage.getItem('userRole') === 'admin';
+    if (!isAdmin) {
+      next('/');
+    } else {
+      next();
+    }
+  } else {
+    next();
+  }
 })
 
 export default router
