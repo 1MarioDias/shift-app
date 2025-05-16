@@ -15,7 +15,7 @@
             'px-4 py-2 rounded-xl font-medium transition-colors',
             activeTab === tab.id 
               ? 'bg-[#FFD300] text-black' 
-              : 'text-stone-50 hover:bg-white hover:bg-opacity-10'
+              : 'text-stone-50 hover:bg-white hover:text-black hover:bg-opacity-10'
           ]"
         >
           {{ tab.name }}
