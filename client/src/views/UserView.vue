@@ -4,15 +4,22 @@
       <!-- user info + change user/password -->
       <div>
         <div class="flex items-center gap-2">
-          <input
-            v-if="editingUsername"
-            v-model="newUsername"
-            @keyup.enter="saveUsername"
-            class="text-3xl font-bold bg-transparent border-b border-white focus:outline-none"
-            pattern="^[a-zA-Z0-9_]+$"
-            placeholder="Enter new username"
-          />
-          <h1 v-else class="text-3xl font-bold">{{ username }}</h1>
+          <h1 class="text-3xl font-bold" v-if="!editingUsername">{{ username }}</h1>
+
+          <div v-else class="flex items-center gap-2">
+            <input
+              v-model="newUsername"
+              class="bg-transparent border-b border-white focus:outline-none text-white text-3xl"
+              pattern="^[a-zA-Z0-9_]+$"
+              placeholder="Enter new username"
+            />
+            <button
+              @click="saveUsername"
+              class="px-6 py-2 ml-2 text-sm font-medium border border-white text-ehite rounded-md hover:bg-[white]  hover:text-black transition duration-200"
+            >
+              Save
+            </button>
+          </div>
         </div>
         <p class="text-lg text-stone-300">Welcome back!</p>
 
@@ -111,63 +118,75 @@ export default {
         userStore.profileImage = value;
         localStorage.setItem("userProfileImage", value);
       }
-    }
+    },
+
   },
-  data() {
-    return {
-      username: "User1",
-      events: [
-        { image: "/event1.jpg", title: "Sunset Party", date: "May 25, 2025" },
-        { image: "/event2.jpg", title: "Tech Meetup", date: "Jun 1, 2025" }
-      ],
-      waitlist: [
-        { name: "Hidden Festival", date: "May 12, 2025" },
-        { name: "Jazz Night", date: "May 14, 2025" }
-      ],
-      notifications: [
-        { message: "Your ticket to Sunset Party was approved!", date: "May 10, 2025" },
-        { message: "Event Tech Meetup is starting soon!", date: "May 15, 2025" }
-      ],
-      editingUsername: false,
-      newUsername: "User1",
-    };
+    data() {
+      return {
+            newUsername: '',
+            editingUsername: false,
+            username: userStore.username, 
+        events: [
+          { image: "/event1.jpg", title: "Sunset Party", date: "May 25, 2025" },
+          { image: "/event2.jpg", title: "Tech Meetup", date: "Jun 1, 2025" }
+        ],
+        waitlist: [
+          { name: "Hidden Festival", date: "May 12, 2025" },
+          { name: "Jazz Night", date: "May 14, 2025" }
+        ],
+        notifications: [
+          { message: "Your ticket to Sunset Party was approved!", date: "May 10, 2025" },
+          { message: "Event Tech Meetup is starting soon!", date: "May 15, 2025" }
+        ]
+      };
+    },
+
     
-  },
-  //profile picture
+
+  //profile picture and username
   mounted() {
-    const stored = localStorage.getItem("userProfileImage");
-    if (!userStore.profileImage && stored) {
-      userStore.profileImage = stored;
-    }
-  },
+      const storedImage = localStorage.getItem("userProfileImage");
+      if (!userStore.profileImage && storedImage) {
+        userStore.profileImage = storedImage;
+      }
+
+      const storedUsername = localStorage.getItem("username");
+      if (storedUsername) {
+        this.username = storedUsername;
+        userStore.username = storedUsername;
+      }
+
+      this.newUsername = this.username;
+    },
   methods: {
-  handleImageUpload(event) {
-    const file = event.target.files[0];
-    if (file) {
-      const imageURL = URL.createObjectURL(file);
-      this.profileImage = imageURL;
-    }
-  },
+    handleImageUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const imageURL = URL.createObjectURL(file);
+        this.profileImage = imageURL;
+      }
+    },
 
-  triggerFileUpload() {
-    this.$refs.fileInput.click();
-  }, 
+    triggerFileUpload() {
+      this.$refs.fileInput.click();
+    },
 
-  toggleUsernameEdit() {
-    this.editingUsername = true;
-    this.newUsername = this.username;
-  },
+    toggleUsernameEdit() {
+      this.editingUsername = true;
+      this.newUsername = this.username;
+    },
 
-  saveUsername() {
-    const valid = /^[a-zA-Z0-9_]+$/.test(this.newUsername);
-    if (valid && this.newUsername.trim() !== "") {
-      this.username = this.newUsername;
-      this.editingUsername = false;
-    } else {
-      alert("Invalid username. Only letters, numbers, and underscores are allowed.");
+    saveUsername() {
+      const valid = /^[a-zA-Z0-9_]+$/.test(this.newUsername);
+      if (valid && this.newUsername.trim() !== "") {
+        this.username = this.newUsername;
+        this.editingUsername = false;
+        localStorage.setItem("username", this.username);
+      } else {
+        alert("Invalid username. Only letters, numbers, and underscores are allowed.");
+      }
     }
   }
-}
 };
 </script>
 

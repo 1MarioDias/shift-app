@@ -1,6 +1,7 @@
-//profile picture
+//profile picture and username
 import { reactive } from 'vue';
 
 export const userStore = reactive({
-  profileImage: '/defaultProfile.svg'
+  profileImage: '/defaultProfile.svg',
+  username: 'User1'
 });

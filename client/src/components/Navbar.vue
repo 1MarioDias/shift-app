@@ -87,6 +87,9 @@ export default {
       return userStore.profileImage && userStore.profileImage.trim() !== ''
         ? userStore.profileImage
         : '/defaultProfile.svg';
+    },
+    username() {
+      return userStore.username || 'User1';
     }
   },
 };
