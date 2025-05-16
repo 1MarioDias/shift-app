@@ -28,7 +28,7 @@
         <SearchBar
           placeholder="Find your city"
           containerClass="h-12 w-full max-w-[700px] bg-white bg-opacity-90 rounded-full shadow-md px-4 transition-colors duration-300 hover:bg-[#FFD300]"
-          inputClass="text-base text-black ml-2"
+          inputClass="text-base text-black ml-2 focus:outline-none"
         >
           <template #prepend>
             <svg
