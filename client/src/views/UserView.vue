@@ -3,11 +3,22 @@
     <div class="flex items-start justify-between mb-12">
       <!-- user info + change user/password -->
       <div>
-        <h1 class="text-3xl font-bold">{{ username }}</h1>
+        <div class="flex items-center gap-2">
+          <input
+            v-if="editingUsername"
+            v-model="newUsername"
+            @keyup.enter="saveUsername"
+            class="text-3xl font-bold bg-transparent border-b border-white focus:outline-none"
+            pattern="^[a-zA-Z0-9_]+$"
+            placeholder="Enter new username"
+          />
+          <h1 v-else class="text-3xl font-bold">{{ username }}</h1>
+        </div>
         <p class="text-lg text-stone-300">Welcome back!</p>
 
         <div class="flex gap-4 mt-4">
           <button
+            @click="toggleUsernameEdit"
             class="px-4 py-2 border border-white text-white rounded-md hover:bg-white hover:text-black transition"
           >
             Change Username
@@ -116,8 +127,11 @@ export default {
       notifications: [
         { message: "Your ticket to Sunset Party was approved!", date: "May 10, 2025" },
         { message: "Event Tech Meetup is starting soon!", date: "May 15, 2025" }
-      ]
+      ],
+      editingUsername: false,
+      newUsername: "User1",
     };
+    
   },
   //profile picture
   mounted() {
@@ -127,17 +141,33 @@ export default {
     }
   },
   methods: {
-    handleImageUpload(event) {
-      const file = event.target.files[0];
-      if (file) {
-        const imageURL = URL.createObjectURL(file);
-        this.profileImage = imageURL;
-      }
-    },
-    triggerFileUpload() {
-      this.$refs.fileInput.click();
+  handleImageUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+      const imageURL = URL.createObjectURL(file);
+      this.profileImage = imageURL;
+    }
+  },
+
+  triggerFileUpload() {
+    this.$refs.fileInput.click();
+  }, 
+
+  toggleUsernameEdit() {
+    this.editingUsername = true;
+    this.newUsername = this.username;
+  },
+
+  saveUsername() {
+    const valid = /^[a-zA-Z0-9_]+$/.test(this.newUsername);
+    if (valid && this.newUsername.trim() !== "") {
+      this.username = this.newUsername;
+      this.editingUsername = false;
+    } else {
+      alert("Invalid username. Only letters, numbers, and underscores are allowed.");
     }
   }
+}
 };
 </script>
 
