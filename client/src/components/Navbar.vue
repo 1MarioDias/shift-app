@@ -52,7 +52,6 @@
     </div>
   </nav>
 
-  <RouterView />
 </template>
 
 
