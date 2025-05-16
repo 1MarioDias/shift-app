@@ -1,12 +1,10 @@
 <template>
   <div class="min-h-screen px-8 py-6">
-    <!-- Dashboard Header -->
     <div class="mb-8">
       <h1 class="text-4xl font-bold text-stone-50">Admin Dashboard</h1>
       <p class="text-stone-400">Manage events, users, comments and reports</p>
     </div>
 
-    <!-- Navigation Tabs -->
     <div class="mb-8">
       <nav class="flex gap-2">
         <button 
@@ -25,18 +23,10 @@
       </nav>
     </div>
 
-    <!-- Tab Content -->
     <div class="bg-white bg-opacity-10 rounded-2xl backdrop-blur-md shadow-xl p-6">
-      <!-- Events Table -->
       <AdminEventsTable v-if="activeTab === 'events'" />
-      
-      <!-- Users Table -->
       <AdminUsersTable v-if="activeTab === 'users'" />
-      
-      <!-- Comments Table -->
       <AdminCommentsTable v-if="activeTab === 'comments'" />
-      
-      <!-- Reports Table -->
       <AdminReportsTable v-if="activeTab === 'reports'" />
     </div>
   </div>

@@ -17,12 +17,11 @@ exports.getEvents = async (req, res, next) => {
             organizerId
         } = req.query;
 
-        // Validate pageSize
+        // Valida pageSize
         if (pageSize < 1 || pageSize > 100) {
             throw new ErrorHandler(400, 'pageSize must be between 1 and 100');
         }
 
-        // Build where clause
         const whereClause = {};
 
         if (query) {
@@ -61,7 +60,7 @@ exports.getEvents = async (req, res, next) => {
             order: [[sortBy, order.toUpperCase()]]
         });
 
-        // Format response
+        // response
         const events = rows.map(event => ({
             eventId: event.idEvento,
             title: event.titulo,
@@ -73,7 +72,7 @@ exports.getEvents = async (req, res, next) => {
             isPublic: event.isPublic
         }));
 
-        // Send response
+        // envia response
         res.json({
             data: events,
             pagination: {

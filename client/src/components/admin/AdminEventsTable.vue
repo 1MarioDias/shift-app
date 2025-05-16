@@ -1,6 +1,5 @@
 <template>
   <div>
-    <!-- Error Notification -->
     <div 
       v-if="error" 
       class="mb-4 p-4 bg-red-500 bg-opacity-20 border border-red-500 rounded-xl text-red-500"
@@ -8,7 +7,6 @@
       {{ error }}
     </div>
 
-    <!-- Loading State -->
     <div 
       v-if="loading" 
       class="mb-4 p-4 bg-[#FFD300] bg-opacity-20 border border-[#FFD300] rounded-xl text-[#FFD300] text-center"
@@ -16,7 +14,6 @@
       Loading events...
     </div>
 
-    <!-- Admin Table -->
     <AdminTable
       v-else
       :columns="columns"
@@ -186,11 +183,11 @@ export default {
       await this.fetchEvents();
     },
     handleEdit(eventId) {
-      // Placeholder for edit functionality
+      // alterar isto
       console.log('Edit event:', eventId);
     },
     handleDelete(eventId) {
-      // Placeholder for delete functionality
+      // alterar isto
       console.log('Delete event:', eventId);
     }
   },

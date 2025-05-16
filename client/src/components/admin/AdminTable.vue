@@ -1,6 +1,5 @@
 <template>
   <div>
-    <!-- Table Filters -->
     <div class="mb-6 flex gap-4 flex-wrap">
       <div class="flex-1 min-w-[200px]">
         <input 
@@ -13,7 +12,6 @@
       <slot name="filters"></slot>
     </div>
 
-    <!-- Table -->
     <div class="overflow-x-auto">
       <table class="w-full">
         <thead>
@@ -48,7 +46,6 @@
       </table>
     </div>
 
-    <!-- Pagination -->
     <div class="mt-6 flex justify-between items-center">
       <div class="text-stone-400">
         Showing {{ startIndex + 1 }}-{{ endIndex }} of {{ totalItems }}
