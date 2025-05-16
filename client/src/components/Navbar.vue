@@ -18,7 +18,7 @@
 
     <!-- SearchBar -->
     <div class="flex flex-1 justify-center max-md:hidden">
-      <SearchBar class="rounded-full px-4 py-2 w-full max-w-xl">
+      <SearchBar class="rounded-full px-4 py-2 w-full max-w-xl focus:">
         <template #prepend>
           <div v-html="searchIcon" class="mr-2 [&_svg]:stroke-[#FAF9F6] [&_svg]:fill-none"></div>
         </template>
@@ -36,14 +36,14 @@
     <div class="flex gap-5 items-center">
       <!-- Ícone do utilizador -->
       <RouterLink to="/user">
-        <button class="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
+        <button class="w-12 h-12 rounded-full overflow-hidden border-2 border-white cursor-pointer">
           <img :src="profileImage" alt="User" class="w-full h-full object-cover" />
         </button>
       </RouterLink>
       <!-- Botão Create Event -->
       <RouterLink to="/create">
         <button
-          class="flex items-center justify-center gap-2 px-5 py-2 rounded-2xl bg-[#FAF9F6] text-black transition duration-300 hover:bg-[#426CFF] hover:text-white"
+          class="flex items-center justify-center gap-2 px-5 py-2 rounded-2xl bg-[#FAF9F6] text-black transition duration-300 hover:bg-[#426CFF] hover:text-white cursor-pointer"
         >
           <span class="text-xs font-medium">Create Event +</span>
         </button>

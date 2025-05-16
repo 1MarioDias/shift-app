@@ -31,7 +31,7 @@ export default {
     },
     inputClass: {
       type: String,
-      default: 'text-xs text-stone-50'
+      default: 'text-xs text-stone-50 focus:outline-none'
     }
   }
 }
