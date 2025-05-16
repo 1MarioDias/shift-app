@@ -2,16 +2,16 @@
   <div id="app" class="app-wrapper">
     <VideoBackground />
     <div class="pt-[150px]">
-      <Navbar :profileImage="profileImage" />
+      <Navbar v-if="!isLoginRoute" :profileImage="profileImage" />
       <RouterView :profileImage="profileImage" @update-image="profileImage = $event" />
     </div>
   </div>
 </template>
 
-
 <script>
 import VideoBackground from "./components/VideoBackground.vue";
 import Navbar from "./components/Navbar.vue";
+import { useRoute } from 'vue-router';
 
 export default {
   name: "LandingPage",
@@ -21,25 +21,14 @@ export default {
   },
   data() {
     return {
-      heroImage: "/images/heroImage.png",
-      aboutImage: "/images/aboutImage.png",
-      profileImage: "/defaultProfile.svg", 
-      featuredEvents: [
-        {
-          id: 1,
-          image: "/images/cardImage.png",
-          type: "Event",
-          date: "Wed, Apr 2 • 7:00 PM",
-          price: "from 99.00€",
-          author: "John Doe",
-          subscribers: "5.5k",
-          title: "Featured Event",
-        },
-      ],
+      profileImage: "/defaultProfile.svg"
     };
   },
-
-  //profile picture
+  computed: {
+    isLoginRoute() {
+      return this.$route.path === '/login';
+    }
+  },
   mounted() {
     const stored = localStorage.getItem("userProfileImage");
     this.profileImage = stored ? stored : "/defaultProfile.svg";

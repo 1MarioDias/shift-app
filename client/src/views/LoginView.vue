@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center px-4">
+  <div class="-mt-30 min-h-screen flex items-center justify-center px-4">
     <!-- modal das notificações de login/register -->
     <div 
       v-if="notification.show" 
