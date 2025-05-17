@@ -15,7 +15,7 @@
             />
             <button
               @click="saveUsername"
-              class="px-6 py-2 ml-2 text-sm font-medium border border-white text-ehite rounded-md hover:bg-[white]  hover:text-black transition duration-200"
+              class="px-6 py-2 ml-2 text-sm font-medium border border-white text-white rounded-md hover:bg-white hover:text-black transition duration-200"
             >
               Save
             </button>
@@ -61,15 +61,16 @@
       <h2 class="text-2xl font-semibold mb-3">Saved Events</h2>
       <div class="text-stone-400" v-if="!events.length">No events saved yet.</div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6" v-else>
-        <div
+        <router-link
           v-for="(event, index) in events"
           :key="index"
-          class="bg-stone-800 rounded-xl p-4"
+          :to="`/event/${event.id}`"
+          class="bg-stone-800 rounded-xl p-4 hover:bg-stone-700 transition block"
         >
           <img :src="event.image" class="w-full h-40 object-cover rounded-md mb-2" />
           <h3 class="font-semibold text-white">{{ event.title }}</h3>
           <p class="text-sm text-stone-400">{{ event.date }}</p>
-        </div>
+        </router-link>
       </div>
     </div>
 
@@ -104,6 +105,7 @@
   </div>
 </template>
 
+
 <script>
 import { userStore } from '../stores/userStore';
 
@@ -127,9 +129,10 @@ export default {
             editingUsername: false,
             username: userStore.username, 
         events: [
-          { image: "/event1.jpg", title: "Sunset Party", date: "May 25, 2025" },
-          { image: "/event2.jpg", title: "Tech Meetup", date: "Jun 1, 2025" }
+          { id: 1, image: "/images/evento1.png", title: "Sunset Party", date: "May 25, 2025" },
+          { id: 2, image: "/images/evento2.jpg", title: "Tech Meetup", date: "Jun 1, 2025" }
         ],
+
         waitlist: [
           { name: "Hidden Festival", date: "May 12, 2025" },
           { name: "Jazz Night", date: "May 14, 2025" }

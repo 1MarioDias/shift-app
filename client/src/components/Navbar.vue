@@ -20,7 +20,9 @@
     <div class="flex flex-1 justify-center max-md:hidden">
       <SearchBar class="rounded-full px-4 py-2 w-full max-w-xl focus:">
         <template #prepend>
-          <div v-html="searchIcon" class="mr-2 [&_svg]:stroke-[#FAF9F6] [&_svg]:fill-none"></div>
+              <RouterLink to="/search">
+                <div v-html="searchIcon" class="mr-2 cursor-pointer [&_svg]:stroke-[#FAF9F6] [&_svg]:fill-none"></div>
+              </RouterLink>
         </template>
         <template #append>
           <div class="mx-5 w-0.5 bg-stone-50 h-[27px]"></div>

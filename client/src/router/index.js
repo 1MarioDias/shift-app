@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
+import SearchResultsView from '../views/SearchResultsView.vue'
 
 const router = createRouter ({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -33,7 +34,18 @@ const router = createRouter ({
             name: 'admin',
             component: () => import('../views/admin/AdminView.vue'),
             // meta: { requiresAdmin: true }
-        }
+        },
+        {
+            path: '/search',
+            name: 'SearchResults',
+            component: SearchResultsView
+        },
+        {
+          path: '/event/:id',
+          name: 'EventView',
+          component: () => import('../views/EventView.vue')
+        },
+
     ]
 })
 
