@@ -58,15 +58,6 @@
 <script>
 import L from 'leaflet';
 
-const defaultIcon = L.icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
 export default {
   name: "SearchResultsView",
   data() {
@@ -100,7 +91,7 @@ export default {
           image: "/images/evento2.jpg"
         }
       ]
-    }
+    };
   },
   watch: {
     mapMode(newVal) {
@@ -119,6 +110,15 @@ export default {
       }
 
       this.map = L.map('map').setView([39.5, -8], 6);
+
+      // ✅ Previne que clicar no mapa feche os popups
+      this.map.on('popupclose', e => {
+        e.originalEvent?.stopPropagation?.();
+      });
+      this.map.on('click', e => {
+        e.originalEvent?.stopPropagation?.();
+      });
+
       L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
         subdomains: 'abcd',
@@ -135,15 +135,25 @@ export default {
               <span style="color: gray;">${event.type} • ${event.time}</span>
             </div>
           `;
-          L.marker(event.coords, { icon: defaultIcon })
-            .addTo(this.map)
-            .bindPopup(popupContent);
+
+          const popup = L.popup({
+            closeButton: false,
+            autoClose: false,
+            closeOnClick: false,
+            className: 'custom-popup'
+          })
+            .setLatLng(event.coords)
+            .setContent(popupContent);
+
+          popup.addTo(this.map);
         }
       });
     }
   }
 }
 </script>
+
+
 
 <style scoped>
 #map {
