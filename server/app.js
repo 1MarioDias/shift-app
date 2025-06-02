@@ -33,18 +33,12 @@ app.use((req, res, next) => {
 // use route middleware for /events requests
 app.use('/events', require('./routes/events.routes.js'));
 
-app.use('/', require('./routes/users.routes.js'));
+app.use('/users', require('./routes/users.routes.js'));
 
 //handle invalid routes (404)    
 app.use((req, res, next) => {
     res.status(404).json({ message: `The requested resource was not found: ${req.method} ${req.originalUrl}` });
 });
-
-//handle invalid routes (404)    
-app.use((req, res, next) => {
-    res.status(404).json({ message: `The requested resource was not found: ${req.method} ${req.originalUrl}` });
-});
-
 
 // error middleware (always at the end of the file)
 app.use((err, req, res, next) => {
