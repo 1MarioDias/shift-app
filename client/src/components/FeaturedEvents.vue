@@ -10,18 +10,18 @@
             {{ error }}
         </div>
         <div v-else class="grid grid-cols-4 gap-14 max-md:grid-cols-2 max-sm:grid-cols-1">
-            <EventCard 
-                v-for="event in events" 
-                :key="event.eventId"
-                :image="event.image || `../../public/images/cardImage.png`"
-                :type="event.eventType"
-                :date="formatDate(event.date)"
-                :location="event.location"
-                :author="'SHIFT'"
-                :title="event.title"
-                />
-        </div>
-    </section>
+         <EventCard 
+             v-for="event in events" 
+             :key="event.eventId"
+             :image="event.image || `../../public/images/cardImage.png`"
+             :type="event.eventType"
+             :date="formatDate(event.date)"
+             :location="event.location"
+             :author="event.authorName || 'Unknown Author'"
+             :title="event.title"
+             />
+     </div>
+ </section>
 </template>
 
 <script>
@@ -42,21 +42,29 @@ export default {
     },
     methods: {
         formatDate(dateStr) {
-            return new Date(dateStr).toLocaleDateString('en-US', {
-                weekday: 'long',
+            if (!dateStr) return 'N/A';
+            return new Date(dateStr).toLocaleDateString('en-US', { 
+                weekday: 'short', 
                 year: 'numeric',
-                month: 'long',
+                month: 'short',
                 day: 'numeric',
             });
         },
         async fetchEvents() {
             try {
                 this.loading = true;
-                const response = await eventosService.getFeaturedEvents();
-                this.events = response.data;
+                this.error = null; 
+                const response = await eventosService.getFeaturedEvents(); 
+                if (response && response.data) {
+                    this.events = response.data; 
+                } else {
+                    this.events = []; // Ensure events is an array
+                    this.error = 'Featured events data is not in the expected format.';
+                }
             } catch (err) {
-                this.error = "Failed to load events. Launch the server and try again.";
-                console.error(err);
+                this.error = err.message || 'Failed to fetch featured events.';
+                console.error("Error in FeaturedEvents fetchEvents:", err);
+                this.events = []; // Ensure events is an array on error
             } finally {
                 this.loading = false;
             }

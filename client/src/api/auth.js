@@ -1,31 +1,23 @@
 const API_URL = 'http://127.0.0.1:3000';
 
+import { authStore } from '../stores/authStore';
+
 export const authService = {
     async login(credentials) {
         try {
-            const response = await fetch(`${API_URL}/login`, {
+            const response = await fetch(`${API_URL}/users/login`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(credentials)
             });
-
             const data = await response.json();
-            
             if (!response.ok) {
-                throw new Error(
-                    data.errorMessage || 
-                    data.error || 
-                    'Login failed. Please check your credentials and try again.'
-                );
+                throw new Error(data.errorMessage || data.error || 'Login failed.');
             }
-
-            if (!data.accessToken) {
-                throw new Error('Server response missing authentication token.');
+            if (!data.accessToken || !data.user) {
+                throw new Error('Server response missing authentication token or user data.');
             }
-
-            localStorage.setItem('token', data.accessToken);
+            authStore.setAuth(data.accessToken, data.user); // Store token e user data
             return data;
         } catch (error) {
             if (error instanceof TypeError) {
@@ -39,22 +31,13 @@ export const authService = {
         try {
             const response = await fetch(`${API_URL}/users`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(userData)
             });
-
             const data = await response.json();
-            
             if (!response.ok) {
-                throw new Error(
-                    data.errorMessage || 
-                    data.error || 
-                    this.getRegistrationErrorMessage(response.status)
-                );
+                throw new Error(data.errorMessage || data.error || this.getRegistrationErrorMessage(response.status));
             }
-
             return data;
         } catch (error) {
             if (error instanceof TypeError) {
@@ -65,9 +48,10 @@ export const authService = {
     },
 
     logout() {
-        localStorage.removeItem('token');
+        authStore.clearAuth();
+        // redirect para o login
+        router.push('/login'); 
     },
-
     getRegistrationErrorMessage(status) {
         const errorMessages = {
             400: 'Invalid registration information provided.',

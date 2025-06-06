@@ -1,26 +1,26 @@
+// filepath: c:\Users\shouk\Documents\LTSIW\2ºAno\ProjetoII\shift-app\server\app.js
 const express = require('express');
+const cors = require('cors');
 
-// read environment variables from .env file
 require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT;
 const host = process.env.HOST;
 
-// CORS middleware - Move this BEFORE routes
-app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    if (req.method === 'OPTIONS') {
-        return res.sendStatus(200);
-    }
-    next();
-});
+const corsOptions = {
+  origin: 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+};
+app.use(cors(corsOptions));
+
+// Comment out this line:
+// app.options('*', cors(corsOptions)); 
 
 app.use(express.json());
 
-// middleware for ALL routes
 app.use((req, res, next) => {
     const start = Date.now();
     res.on("finish", () => {
@@ -30,58 +30,20 @@ app.use((req, res, next) => {
     next()
 });
 
-// use route middleware for /events requests
+// Ensure these are still commented out:
 app.use('/events', require('./routes/events.routes.js'));
-
 app.use('/users', require('./routes/users.routes.js'));
+app.use('/comments', require('./routes/comments.routes.js'));
 
-//handle invalid routes (404)    
 app.use((req, res, next) => {
     res.status(404).json({ message: `The requested resource was not found: ${req.method} ${req.originalUrl}` });
 });
 
-// error middleware (always at the end of the file)
 app.use((err, req, res, next) => {
-    // !Uncomment this line to log the error details to the server console!
-    console.error(err);
-
-    // error thrown by express.json() middleware when the request body is not valid JSON
-    if (err.type === 'entity.parse.failed')
-        return res.status(400).json({ error: 'Invalid JSON payload! Check if your body data is a valid JSON.' });
-
-    // Sequelize validation errors (ALL models)
-    if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError') {
-        return res.status(400).json({
-            error: 'Validation error',
-            details: err.errors.map(e => ({
-                field: e.path,
-                message: e.message
-            }))
-        });
-    }
-
-    // SequelizeDatabaseError related to an invalid ENUM value (USERS table -> role field)
-    if (err.name === 'SequelizeDatabaseError') {
-        if (err.original.code === 'ER_CHECK_CONSTRAINT_VIOLATED') {
-            return res.status(400).json({
-                error: 'Invalid value for enumerated field',
-                message: err.message
-            });
-        }
-        if (err.original.code === 'ER_BAD_NULL_ERROR') {
-            return res.status(400).json({
-                error: 'Missing mandatory field',
-                message: err.message
-            });
-        }
-        if (err.original.code === 'ER_DUP_ENTRY') {
-            return res.status(400).json({
-                error: 'Duplicate entry',
-                message: err.message
-            });
-        }
-    }
-    // other errors
+    console.error(err); // Make sure you're seeing the error here
+    // ... rest of your error handler
+    if (err.type === 'entity.parse.failed') // ...
+    // ... (keep your existing error handler logic)
     res.status(err.statusCode || 500).json({ error: err.message || 'Internal Server Error' });
 });
 

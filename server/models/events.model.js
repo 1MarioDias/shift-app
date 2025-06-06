@@ -1,11 +1,26 @@
 const { DataTypes } = require('sequelize');
 const db = require('./db');
+const User = require('./users.model');
 
 const Event = db.sequelize.define('eventos', {
     idEvento: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true
+    },
+    idAutor: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: User,
+            key: 'idUtilizador'
+        },
+        field: 'idAutor'
+    },
+    dataCriacao: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW
     },
     titulo: {
         type: DataTypes.STRING(255),
@@ -20,7 +35,7 @@ const Event = db.sequelize.define('eventos', {
         allowNull: true
     },
     data: {
-        type: DataTypes.DATE,
+        type: DataTypes.DATEONLY,
         allowNull: false
     },
     hora: {
@@ -48,13 +63,24 @@ const Event = db.sequelize.define('eventos', {
         type: DataTypes.INTEGER,
         defaultValue: 0
     },
+    linksRelevantes: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
     isPublic: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true
     }
+
 }, {
-    timestamps: false
+    timestamps: false,
+    tableName: 'eventos'
 });
+
+// associações a outras tabelas
+Event.belongsTo(User, { foreignKey: 'idAutor', as: 'organizer' });
+User.hasMany(Event, { foreignKey: 'idAutor', as: 'organizedEvents' });
+
 
 module.exports = Event;
