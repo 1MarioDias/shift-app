@@ -247,7 +247,7 @@ export default {
       notification: {
         show: false,
         message: '',
-        type: 'success', // 'success' or 'error'
+        type: 'success',
         timeout: null
       }
     };
@@ -299,8 +299,6 @@ export default {
     },
     async fetchEvents() {
       this.loading = true;
-      // Do not clear notification if it's from fetchUniqueEventTypes
-      // this.closeNotification(); // Or only clear if not an error from fetchUniqueEventTypes
       try {
         const params = {
           page: this.currentPage,

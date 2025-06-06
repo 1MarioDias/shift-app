@@ -14,13 +14,12 @@ export const authService = {
             if (!response.ok) {
                 throw new Error(data.errorMessage || data.error || 'Login failed.');
             }
-            if (!data.accessToken || !data.user) { // Check for user object
+            if (!data.accessToken || !data.user) {
                 throw new Error('Server response missing authentication token or user data.');
             }
-            authStore.setAuth(data.accessToken, data.user); // Store token and user data
+            authStore.setAuth(data.accessToken, data.user); // Store token e user data
             return data;
         } catch (error) {
-            // ... existing error handling ...
             if (error instanceof TypeError) {
                 throw new Error('Unable to connect to the server. Please check your internet connection.');
             }
@@ -41,7 +40,6 @@ export const authService = {
             }
             return data;
         } catch (error) {
-            // ... existing error handling ...
             if (error instanceof TypeError) {
                 throw new Error('Unable to connect to the server. Please check your internet connection.');
             }
@@ -51,14 +49,13 @@ export const authService = {
 
     logout() {
         authStore.clearAuth();
-        // Optionally redirect to login page or home page
+        // redirect para o login
         router.push('/login'); 
     },
-    // ... getRegistrationErrorMessage ...
     getRegistrationErrorMessage(status) {
         const errorMessages = {
             400: 'Invalid registration information provided.',
-            409: 'An account with this email already exists.', // Corrected from 400
+            409: 'An account with this email already exists.',
             500: 'Server error occurred during registration.'
         };
         return errorMessages[status] || 'Registration failed. Please try again.';

@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const db = require('./db'); // Assuming db.js exports the sequelize instance
+const db = require('./db');
 const User = require('./users.model');
 
 const Event = db.sequelize.define('eventos', {
@@ -8,16 +8,16 @@ const Event = db.sequelize.define('eventos', {
         primaryKey: true,
         autoIncrement: true
     },
-    idAutor: { // Changed from idUtilizador to idAutor
+    idAutor: {
         type: DataTypes.INTEGER,
-        allowNull: false, // As per your diagram, an event is created by a user
+        allowNull: false,
         references: {
             model: User,
-            key: 'idUtilizador' // This still refers to the PK in the User table
+            key: 'idUtilizador'
         },
-        field: 'idAutor' // Explicitly map to the 'idAutor' column in the DB
+        field: 'idAutor'
     },
-    dataCriacao: { // Added based on diagram
+    dataCriacao: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: DataTypes.NOW
@@ -34,11 +34,11 @@ const Event = db.sequelize.define('eventos', {
         type: DataTypes.TEXT,
         allowNull: true
     },
-    data: { // This is the event date
-        type: DataTypes.DATEONLY, // Using DATEONLY if time is separate
+    data: {
+        type: DataTypes.DATEONLY,
         allowNull: false
     },
-    hora: { // This is the event time
+    hora: {
         type: DataTypes.TIME,
         allowNull: false
     },
@@ -52,19 +52,19 @@ const Event = db.sequelize.define('eventos', {
     },
     maxParticipantes: {
         type: DataTypes.INTEGER,
-        allowNull: true // Diagram doesn't specify, assuming optional
+        allowNull: true
     },
     estado: {
         type: DataTypes.STRING(50),
         allowNull: false,
-        defaultValue: 'ativo' // Or as per your logic
+        defaultValue: 'ativo'
     },
     visualizacoes: {
         type: DataTypes.INTEGER,
         defaultValue: 0
     },
-    linksRelevantes: { // Added based on diagram
-        type: DataTypes.STRING, // Or TEXT if it can be long
+    linksRelevantes: {
+        type: DataTypes.STRING,
         allowNull: true
     },
     isPublic: {
@@ -72,16 +72,15 @@ const Event = db.sequelize.define('eventos', {
         allowNull: false,
         defaultValue: true
     }
-    // idUtilizador field is removed
+
 }, {
-    timestamps: false, // No createdAt/updatedAt columns if dataCriacao serves this
+    timestamps: false,
     tableName: 'eventos'
 });
 
-// Association: An Event belongs to a User (as Organizer/Author)
-// The foreign key in the Event model is 'idAutor'
-Event.belongsTo(User, { foreignKey: 'idAutor', as: 'organizer' }); // or 'author'
-User.hasMany(Event, { foreignKey: 'idAutor', as: 'organizedEvents' }); // or 'authoredEvents'
+// associações a outras tabelas
+Event.belongsTo(User, { foreignKey: 'idAutor', as: 'organizer' });
+User.hasMany(Event, { foreignKey: 'idAutor', as: 'organizedEvents' });
 
 
 module.exports = Event;

@@ -48,7 +48,7 @@
 
 <script>
 import AdminTable from './AdminTable.vue';
-import { adminService } from '../../api/adminService'; // Adjust path
+import { adminService } from '../../api/adminService';
 
 export default {
   name: 'AdminUsersTable',
@@ -58,8 +58,8 @@ export default {
       columns: [
         { key: 'nome', label: 'Name', sortable: true },
         { key: 'email', label: 'Email', sortable: true },
-        { key: 'dataRegisto', label: 'Registration Date', sortable: true }, // Matches API: createdAt
-        { key: 'tipoUtilizador', label: 'Role', sortable: true } // Matches API: role
+        { key: 'dataRegisto', label: 'Registration Date', sortable: true }, // API: createdAt
+        { key: 'tipoUtilizador', label: 'Role', sortable: true } // API: role
       ],
       users: [],
       currentPage: 0,
@@ -76,7 +76,7 @@ export default {
   methods: {
     formatDate(dateString) {
       if (!dateString) return 'N/A';
-      return new Date(dateString).toLocaleDateString('en-GB', { // Or your preferred locale
+      return new Date(dateString).toLocaleDateString('en-GB', {
         year: 'numeric', month: 'long', day: 'numeric'
       });
     },
@@ -87,20 +87,16 @@ export default {
         const response = await adminService.getUsers({
           page: this.currentPage,
           pageSize: this.pageSize,
-          query: this.searchQuery, // searchQuery is v-model'd in AdminTable and emitted
+          query: this.searchQuery, // v-model'd na AdminTable e enviado
           sortBy: this.sortBy,
           order: this.sortOrder
         });
-        // Correctly map 'name' from API to 'nome' for the template
-        // The backend's /users endpoint (getAllUsers) returns: { userId, name, email, createdAt, role }
         this.users = response.data.map(u => ({
-          idUtilizador: u.userId, // Map userId to idUtilizador if your template uses that
-          nome: u.name,           // Map API's 'name' to 'nome'
+          idUtilizador: u.userId,
+          nome: u.name,
           email: u.email,
-          dataRegisto: u.createdAt, // Map API's 'createdAt' to 'dataRegisto'
-          tipoUtilizador: u.role,   // Map API's 'role' to 'tipoUtilizador'
-          // imagemUtilizador: u.profileImageUrl // This field is not provided by the current backend API for the user list
-                                                // So, user.imagemUtilizador in template will be undefined, falling back to default.
+          dataRegisto: u.createdAt,
+          tipoUtilizador: u.role,
         }));
         this.totalItems = response.pagination.totalItems;
         this.totalPages = response.pagination.totalPages;
@@ -129,7 +125,7 @@ export default {
       if (confirm('Are you sure you want to delete this user?')) {
         try {
           await adminService.deleteUser(userId);
-          this.fetchUsers(); // Refresh list
+          this.fetchUsers(); // Refresh na lista
         } catch (err) {
           alert(err.message || 'Failed to delete user.');
           console.error(err);

@@ -1,17 +1,17 @@
-const Comment = require('../models/comments.model'); // Create this model
+const Comment = require('../models/comments.model');
 const User = require('../models/users.model');
 const Event = require('../models/events.model');
 const { Op } = require('sequelize');
 const { ErrorHandler } = require('../utils/error');
 
-// GET /comments - Moderador - Lista TODOS os comentários
+// GET /comments
 exports.getAllComments = async (req, res, next) => {
     try {
         const {
             query,
             page = 0,
             pageSize = 10,
-            sortBy = 'dataComentario', // Assuming this is the column name in comments table
+            sortBy = 'dataComentario',
             order = 'desc',
             userId,
             eventId
@@ -24,7 +24,7 @@ exports.getAllComments = async (req, res, next) => {
         if (isNaN(pageSizeNum) || pageSizeNum < 1 || pageSizeNum > 100) throw new ErrorHandler(400, 'Page size must be between 1 and 100.');
 
         const whereClause = {};
-        if (query) whereClause.conteudo = { [Op.like]: `%${query}%` }; // Assuming 'conteudo' for comment text
+        if (query) whereClause.conteudo = { [Op.like]: `%${query}%` };
         if (userId) {
             const userIdNum = parseInt(userId, 10);
             if (!isNaN(userIdNum)) whereClause.idUtilizador = userIdNum;
@@ -39,8 +39,8 @@ exports.getAllComments = async (req, res, next) => {
         const { count, rows } = await Comment.findAndCountAll({
             where: whereClause,
             include: [
-                { model: User, as: 'commenter', attributes: ['idUtilizador', 'nome'] }, // Alias 'commenter'
-                { model: Event, as: 'commentedEvent', attributes: ['idEvento', 'titulo'] } // Alias 'commentedEvent'
+                { model: User, as: 'commenter', attributes: ['idUtilizador', 'nome'] },
+                { model: Event, as: 'commentedEvent', attributes: ['idEvento', 'titulo'] }
             ],
             limit: pageSizeNum,
             offset: pageNum * pageSizeNum,
@@ -49,7 +49,7 @@ exports.getAllComments = async (req, res, next) => {
         });
 
         const formattedComments = rows.map(comment => ({
-            commentId: comment.idComentario, // Assuming 'idComentario'
+            commentId: comment.idComentario,
             text: comment.conteudo,
             date: comment.dataComentario,
             userId: comment.commenter ? comment.commenter.idUtilizador : null,

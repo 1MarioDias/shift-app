@@ -1,4 +1,3 @@
-// ...existing code...
 const User = require('../models/users.model');
 const jwt = require('jsonwebtoken');
 const { ErrorHandler } = require('../utils/error');
@@ -19,7 +18,6 @@ exports.register = async (req, res, next) => {
             email,
             password,
             dataRegisto: new Date(),
-            // tipoUtilizador will use defaultValue 'Utilizador' from model
         });
 
         // resposta
@@ -30,7 +28,6 @@ exports.register = async (req, res, next) => {
         });
 
     } catch (error) {
-        // ... existing error handling ...
         if (error.name === 'SequelizeUniqueConstraintError') {
             return next(new ErrorHandler(400, 'The provided EMAIL is already in use.'));
         }
@@ -65,7 +62,7 @@ exports.login = async (req, res, next) => {
             {
                 userId: user.idUtilizador,
                 email: user.email,
-                role: user.tipoUtilizador // Include role in JWT payload
+                role: user.tipoUtilizador
             },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
@@ -73,7 +70,7 @@ exports.login = async (req, res, next) => {
 
         res.json({
             accessToken: token,
-            user: { // Send user details, including role, in the response
+            user: { // envia estes dados na resposta
                 userId: user.idUtilizador,
                 name: user.nome,
                 email: user.email,
@@ -91,10 +88,8 @@ exports.login = async (req, res, next) => {
 
 // GET /users/me - Visualização do Perfil do Utilizador Autenticado
 exports.getUserProfile = async (req, res, next) => {
-    // req.user is populated by `requireAuth` and `authenticate` middleware
+    // req.user é populado pelos `requireAuth` e `authenticate` do middleware
     try {
-        // The user's own data is already in req.user from the authenticate middleware
-        // If you need to fetch fresh data or more fields:
         const user = await User.findByPk(req.user.userId, {
             attributes: ['idUtilizador', 'nome', 'email', 'tipoUtilizador', 'dataRegisto']
         });
@@ -120,7 +115,7 @@ exports.getAllUsers = async (req, res, next) => {
             query,
             page = 0,
             pageSize = 10,
-            sortBy = 'dataRegisto', // Matches DB column name
+            sortBy = 'dataRegisto',
             order = 'desc'
         } = req.query;
 
@@ -183,7 +178,7 @@ exports.deleteUser = async (req, res, next) => {
             return next(new ErrorHandler(400, 'Invalid user ID.'));
         }
 
-        // Prevent admin from deleting themselves (optional, but good practice)
+        // Não deixa o admin se apagar
         if (req.user && req.user.userId === userIdToDelete) {
             return next(new ErrorHandler(403, 'Administrators cannot delete their own account.'));
         }

@@ -3,7 +3,7 @@ const db = require('./db');
 const User = require('./users.model');
 const Event = require('./events.model');
 
-const Comment = db.sequelize.define('comentarios', { // Table name 'comentarios'
+const Comment = db.sequelize.define('comentarios', {
     idComentario: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -18,7 +18,7 @@ const Comment = db.sequelize.define('comentarios', { // Table name 'comentarios'
         allowNull: false,
         defaultValue: DataTypes.NOW
     },
-    idUtilizador: { // Foreign Key for User
+    idUtilizador: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
@@ -26,7 +26,7 @@ const Comment = db.sequelize.define('comentarios', { // Table name 'comentarios'
             key: 'idUtilizador'
         }
     },
-    idEvento: { // Foreign Key for Event
+    idEvento: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
@@ -35,11 +35,10 @@ const Comment = db.sequelize.define('comentarios', { // Table name 'comentarios'
         }
     }
 }, {
-    timestamps: false, // No createdAt/updatedAt columns
-    tableName: 'comentarios' // Explicitly set table name
+    timestamps: false,
+    tableName: 'comentarios'
 });
 
-// Associations
 User.hasMany(Comment, { foreignKey: 'idUtilizador', as: 'commentsMade' });
 Comment.belongsTo(User, { foreignKey: 'idUtilizador', as: 'commenter' });
 

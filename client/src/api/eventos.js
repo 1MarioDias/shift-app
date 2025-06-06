@@ -2,22 +2,20 @@ const API_URL = 'http://127.0.0.1:3000';
 import { authStore } from '../stores/authStore';
 
 export const eventosService = {
-    /**
-     * Fetches publicly available events.
-     * Does not send authentication headers.
-     * The backend's `_getPublicEventsList` will handle filtering for isPublic: true.
-     */
+    /* Retorna uma lista de eventos públicos.
+    Não requer autenticação, mas pode aceitar parâmetros de consulta para filtragem.
+    No Backend `_getPublicEventsList` 
+    */
     async getPublicEvents(params = {}) {
         const queryParams = new URLSearchParams({
             page: params.page || 0,
-            pageSize: params.pageSize || 8, // Default for public listings
+            pageSize: params.pageSize || 8,
             sortBy: params.sortBy || 'data',
-            order: params.order || 'desc', // Default to newest first for public
+            order: params.order || 'desc',
             ...(params.query && { query: params.query }),
             ...(params.eventType && { eventType: params.eventType }),
             ...(params.datetime && { datetime: params.datetime }),
             ...(params.location && { location: params.location }),
-            // No isPublic or organizerId here, as it's for public consumption
         });
 
         try {
@@ -26,28 +24,25 @@ export const eventosService = {
             if (!response.ok) {
                 throw new Error(data.errorMessage || data.error || 'Error fetching public events');
             }
-            return data; // Expected format: { data: [], pagination: {}, links: [] }
+            return data;
         } catch (error) {
             console.error('API Error fetching public events:', error);
             throw error;
         }
     },
 
-    /**
-     * Fetches events for admin users.
-     * Sends authentication headers.
-     * The backend's `_getAllEventsForAdmin` will handle admin-specific logic.
-     */
+    /*
+    Retorna uma lista de eventos para o administrador.
+    No Backend `_getAllEventsForAdmin`
+    */
     async getAdminEvents(params = {}) {
         if (!authStore.isAdmin()) {
-            // This check is a safeguard; route protection should primarily be on the backend
-            // and via router guards on the frontend for the admin view itself.
             return Promise.reject(new Error('Administrator privileges required to fetch all events.'));
         }
 
         const queryParams = new URLSearchParams({
             page: params.page || 0,
-            pageSize: params.pageSize || 10, // Default for admin tables
+            pageSize: params.pageSize || 10,
             sortBy: params.sortBy || 'data',
             order: params.order || 'asc',
             ...(params.query && { query: params.query }),
@@ -56,47 +51,47 @@ export const eventosService = {
             ...(params.location && { location: params.location }),
         });
 
-        // Admin-specific filters
+        // Filtros adicionais específicos para admin
         if (params.isPublic !== undefined && params.isPublic !== '') queryParams.set('isPublic', params.isPublic);
         if (params.organizerId) queryParams.set('organizerId', params.organizerId);
 
         try {
             const response = await fetch(`${API_URL}/events?${queryParams.toString()}`, {
                 headers: {
-                    ...authStore.getAuthHeaders() // Essential for admin access
+                    ...authStore.getAuthHeaders() // Autenticação do admin
                 }
             });
             const data = await response.json();
             if (!response.ok) {
                 throw new Error(data.errorMessage || data.error || 'Error fetching events for admin');
             }
-            return data; // Expected format: { data: [], pagination: {}, links: [] }
+            return data;
         } catch (error) {
             console.error('API Error fetching admin events:', error);
             throw error;
         }
     },
 
-    /**
-     * Specialized function for featured events, uses getPublicEvents.
-     */
-    async getFeaturedEvents(page = 0, pageSize = 4) { // Reduced pageSize for featured
+    /*
+    secção de featured events, usa getPublicEvents.
+    */
+    async getFeaturedEvents(page = 0, pageSize = 4) {
         return this.getPublicEvents({
             page,
             pageSize,
-            sortBy: 'data', // Or 'visualizacoes' or other relevant field for "featured"
+            sortBy: 'data', // ou 'visualizacoes'
             order: 'desc'
         });
     },
-    // Keep other event-specific methods like getEventById, createEvent, updateEvent, deleteEvent as needed.
-    // For example, getEventById might not need admin rights if it's a public event detail.
-    // Create, update, delete would likely require auth.
 
+    /*
+    Evento Especifico por ID.
+    */
     async getEventById(eventId) {
         try {
             const response = await fetch(`${API_URL}/events/${eventId}`, {
                 headers: {
-                    ...authStore.getAuthHeaders() // Send auth token if available
+                    ...authStore.getAuthHeaders()
                 }
             });
             if (!response.ok) {
@@ -121,10 +116,10 @@ export const eventosService = {
         }
     },
 
-    /**
-     * Updates specific fields of an event (PATCH).
-     * Requires admin privileges (or event creator, handled by backend).
-     */
+    /*
+    Update campos específicos dum evento
+    AUTH para admin OU criador do evento.
+    */
     async patchEvent(eventId, eventData) {
         if (!authStore.isLoggedIn()) {
             return Promise.reject(new Error('Authentication required.'));
@@ -150,7 +145,7 @@ export const eventosService = {
                 }
                 throw new Error(errorPayload.message);
             }
-            return await response.json(); // Parse JSON only on success
+            return await response.json();
         } catch (error) {
             console.error(`API Error patching event ${eventId}:`, error.message || error);
             if (error instanceof Error) {
@@ -161,10 +156,10 @@ export const eventosService = {
         }
     },
 
-    /**
-     * Deletes an event. Admin specific endpoint or general delete with admin rights.
-     * The backend DELETE /events/:eventId already handles admin/creator logic.
-     */
+    /*
+    Apaga um evento
+    No backend DELETE /events/:eventId já faz a lógica de autenticação
+    */
     async deleteAdminEvent(eventId) {
         if (!authStore.isAdmin()) {
             return Promise.reject(new Error('Administrator privileges required.'));
@@ -175,11 +170,11 @@ export const eventosService = {
                 headers: { ...authStore.getAuthHeaders() }
             });
 
-            if (response.status === 204) { // Success: No Content
+            if (response.status === 204) {
                 return true;
             }
 
-            if (!response.ok) { // For other error statuses
+            if (!response.ok) {
                 let errorPayload = { message: `Error deleting event ${eventId}. Status: ${response.status}` };
                 try {
                     const errorData = await response.json();
@@ -190,7 +185,6 @@ export const eventosService = {
                 }
                 throw new Error(errorPayload.message);
             }
-            // Fallback for unexpected successful responses that are not 204
             return await response.json();
         } catch (error) {
             console.error(`API Error deleting event ${eventId}:`, error.message || error);

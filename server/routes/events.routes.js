@@ -3,29 +3,29 @@ const router = express.Router();
 const eventController = require('../controllers/events.controller');
 const { authenticate, requireAuth, isAdmin } = require('../middlewares/auth.middleware');
 
-// GET /events - Handles both public and admin views based on authentication
-// The `authenticate` middleware will try to populate req.user if token is present.
-// The `eventController.getEvents` will check req.user.role for admin access.
+// GET /events - Trata das visualizações públicas e de administrador com base na autenticação
+// O middleware `authenticate` tentará preencher req.user se o token estiver presente.
+// O `eventController.getEvents` verificará req.user.role para acesso de administrador.
 router.get('/', authenticate, eventController.getEvents);
 
-// GET /events/:eventId - Get a specific event
-// `authenticate` makes req.user available if token is sent. Controller handles auth for private events.
+// GET /events/:eventId - Obtém um evento específico
+// `authenticate` torna req.user disponível se o token for enviado. O Controller trata da autenticação para eventos privados.
 router.get('/:eventId', authenticate, eventController.getEventById);
 
-// POST /events - Create a new event
-// Requires user to be authenticated
+// POST /events - Cria um novo evento
+// Requer que o utilizador esteja autenticado
 router.post('/', authenticate, requireAuth, eventController.createEvent);
 
-// PUT /events/:eventId - Update all data of a specific event
-// Requires user to be authenticated. Controller handles if user is creator or admin.
+// PUT /events/:eventId - Atualiza todos os dados de um evento específico
+// Requer que o utilizador esteja autenticado. O Controller verifica se o utilizador é o criador ou administrador.
 router.put('/:eventId', authenticate, requireAuth, eventController.updateEvent);
 
-// PATCH /events/:eventId - Update specific data of an event
-// Requires user to be authenticated. Controller handles if user is creator or admin.
+// PATCH /events/:eventId - Atualiza dados específicos de um evento
+// Requer que o utilizador esteja autenticado. O Controller verifica se o utilizador é o criador ou administrador.
 router.patch('/:eventId', authenticate, requireAuth, eventController.patchEvent);
 
-// DELETE /events/:eventId - Delete an event
-// Requires user to be authenticated. Controller handles if user is creator or admin.
+// DELETE /events/:eventId - Elimina um evento
+// Requer que o utilizador esteja autenticado. O Controller verifica se o utilizador é o criador ou administrador.
 router.delete('/:eventId', authenticate, requireAuth, eventController.deleteEvent);
 
 module.exports = router;

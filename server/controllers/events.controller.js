@@ -3,11 +3,11 @@ const User = require('../models/users.model');
 const { Op } = require('sequelize');
 const { ErrorHandler } = require('../utils/error');
 
-// Helper to build pagination and response links
+// Helper da paginação e response links
 const buildEventResponse = (req, pageNum, pageSizeNum, count, formattedEvents, queryParamsForLinks = {}) => {
     const totalPages = Math.ceil(count / pageSizeNum);
     const links = [];
-    const basePath = req.baseUrl; // Should be /events
+    const basePath = req.baseUrl;
 
     if (pageNum < totalPages - 1) {
         const nextPageParams = new URLSearchParams({
@@ -25,9 +25,6 @@ const buildEventResponse = (req, pageNum, pageSizeNum, count, formattedEvents, q
         });
         links.push({ rel: "prev-page", href: `${basePath}?${prevPageParams.toString()}`, method: "GET" });
     }
-    // Add other relevant links if necessary, e.g., for creating an event
-    // if (req.user) links.push({ rel: "add-event", href: "/events", method: "POST" });
-
 
     return {
         data: formattedEvents,
@@ -42,9 +39,8 @@ const buildEventResponse = (req, pageNum, pageSizeNum, count, formattedEvents, q
 };
 
 
-// Main exported function for the GET /events route
+// Main GET /events rota
 exports.getEvents = async (req, res, next) => {
-    // The 'authenticate' middleware populates req.user if a valid token is provided
     if (req.user && req.user.role === 'Administrador') {
         return _getAllEventsForAdmin(req, res, next);
     } else {
@@ -52,7 +48,7 @@ exports.getEvents = async (req, res, next) => {
     }
 };
 
-// Internal function to get events for Admin (all events, more filters)
+// Events para o Admin (TODOS os events, e mais filtração)
 async function _getAllEventsForAdmin(req, res, next) {
     try {
         const {
@@ -70,9 +66,9 @@ async function _getAllEventsForAdmin(req, res, next) {
         const includeOptions = [{
             model: User,
             as: 'organizer',
-            attributes: ['idUtilizador', 'nome'] // Ensure 'nome' is fetched
+            attributes: ['idUtilizador', 'nome']
         }];
-        const queryParamsForLinks = { sortBy, order }; // Base params for pagination links
+        const queryParamsForLinks = { sortBy, order };
 
         if (query) {
             whereClause[Op.or] = [
@@ -85,10 +81,10 @@ async function _getAllEventsForAdmin(req, res, next) {
             whereClause.tipoEvento = eventType;
             queryParamsForLinks.eventType = eventType;
         }
-        if (datetime) { // datetime is expected to be 'YYYY-MM-DD'
+        if (datetime) {
             const dateObj = new Date(datetime);
             if (!isNaN(dateObj.getTime()) && datetime.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                whereClause.data = datetime; // Exact match for DATEONLY field
+                whereClause.data = datetime;
                 queryParamsForLinks.datetime = datetime;
             } else {
                 console.warn(`Invalid date format for datetime filter: ${datetime}. Expected YYYY-MM-DD.`);
@@ -98,7 +94,7 @@ async function _getAllEventsForAdmin(req, res, next) {
             whereClause.localizacao = { [Op.like]: `%${location}%` };
             queryParamsForLinks.location = location;
         }
-        // Admin can filter by isPublic status
+        // Filtro isPublic
         if (isPublic !== undefined && (isPublic === 'true' || isPublic === 'false')) {
             whereClause.isPublic = (isPublic === 'true');
             queryParamsForLinks.isPublic = isPublic;
@@ -106,10 +102,9 @@ async function _getAllEventsForAdmin(req, res, next) {
         if (organizerId) {
             const orgIdNum = parseInt(organizerId, 10);
             if (!isNaN(orgIdNum)) {
-                whereClause.idAutor = orgIdNum; // This filters by idAutor
+                whereClause.idAutor = orgIdNum;
                 queryParamsForLinks.organizerId = organizerId;
             } else {
-                // It's good practice to throw an error for invalid input
                 return next(new ErrorHandler(400, 'Invalid organizerId format. Must be an integer.'));
             }
         }
@@ -135,7 +130,7 @@ async function _getAllEventsForAdmin(req, res, next) {
             dataCriacao: event.dataCriacao,
             linksRelevantes: event.linksRelevantes,
             isPublic: event.isPublic,
-            authorName: event.organizer ? event.organizer.nome : 'Unknown Author', // Add authorName
+            authorName: event.organizer ? event.organizer.nome : 'Unknown Author',
             organizer: event.organizer ? { 
                 organizerId: event.organizer.idUtilizador,
                 organizerName: event.organizer.nome
@@ -148,12 +143,11 @@ async function _getAllEventsForAdmin(req, res, next) {
     } catch (error) {
         console.error('Error in _getAllEventsForAdmin:', error);
         if (error instanceof ErrorHandler) return next(error);
-        // Provide a generic error message for unexpected issues
         next(new ErrorHandler(500, 'An unexpected error occurred while fetching events for admin. Please try again later.'));
     }
 }
 
-// Internal function to get public events list (only public, limited filters)
+// Eventos Públicos
 async function _getPublicEventsList(req, res, next) {
     try {
         const {
@@ -192,10 +186,10 @@ async function _getPublicEventsList(req, res, next) {
         
         const { count, rows } = await Event.findAndCountAll({
             where: whereClause,
-            include: [{ // Include organizer to get author's name
+            include: [{
                 model: User,
                 as: 'organizer',
-                attributes: ['nome'] // Only fetch the name
+                attributes: ['nome'] // vai buscar o nome à tabela utilizadores
             }],
             limit: pageSizeNum,
             offset: pageNum * pageSizeNum,
@@ -212,7 +206,7 @@ async function _getPublicEventsList(req, res, next) {
             hora: event.hora,
             location: event.localizacao,
             eventType: event.tipoEvento,
-            authorName: event.organizer ? event.organizer.nome : 'Unknown Author' // Add authorName
+            authorName: event.organizer ? event.organizer.nome : 'Unknown Author'
         }));
 
         const responsePayload = buildEventResponse(req, pageNum, pageSizeNum, count, formattedEvents, queryParamsForLinks);
@@ -235,34 +229,32 @@ exports.getEventById = async (req, res, next) => {
             include: [{
                 model: User,
                 as: 'organizer',
-                attributes: ['idUtilizador', 'nome'] // Fetch organizer details
+                attributes: ['idUtilizador', 'nome']
             }]
-            // Later, you might want to include counts for participants and waiting list
-            // This would require joining with EventoParticipante and ListaEspera tables
-            // and using Sequelize.fn('COUNT', ...)
+            // Adicionar contadores para participantes e lista de espera
+            // juntar com as tabelas EventoParticipante e ListaEspera
+            // usar Sequelize.fn('COUNT', ...)
         });
 
         if (!event) {
             return next(new ErrorHandler(404, `Event with ID ${eventId} not found.`));
         }
 
-        // Authorization for private events
+        // AUTH para private events
         if (!event.isPublic) {
-            if (!req.user) { // No token provided
+            if (!req.user) {
                 return next(new ErrorHandler(401, 'Authentication required to view this private event.'));
             }
-            // If private, user must be the organizer or an admin to view
             if (event.idAutor !== req.user.userId && req.user.role !== 'Administrador') {
                 return next(new ErrorHandler(403, 'You do not have permission to view this private event.'));
             }
         }
 
-        // Placeholder for participant counts - requires more complex queries
-        const currentParticipants = 0; // TODO: Implement actual count
-        const onWaitingList = 0;       // TODO: Implement actual count
+        // placeholders para os contadores
+        const currentParticipants = 0; // TODO: Implementar
+        const onWaitingList = 0;       // TODO: Implementar
 
         const responseLinks = [];
-        // Add modify/delete links if user is organizer or admin
         if (req.user && (event.idAutor === req.user.userId || req.user.role === 'Administrador')) {
             responseLinks.push({ rel: "delete", href: `/events/${event.idEvento}`, method: "DELETE" });
             responseLinks.push({ rel: "modify", href: `/events/${event.idEvento}`, method: "PUT" }); // Or PATCH
@@ -273,9 +265,9 @@ exports.getEventById = async (req, res, next) => {
             title: event.titulo,
             image: event.imagem,
             description: event.descricao,
-            date: event.data, // YYYY-MM-DD
-            time: event.hora, // HH:MM:SS
-            datetime: `${event.data}T${event.hora}`, // Combined for convenience, adjust timezone as needed
+            date: event.data,
+            time: event.hora,
+            datetime: `${event.data}T${event.hora}`,
             location: event.localizacao,
             eventType: event.tipoEvento,
             organizer: event.organizer ? {
@@ -284,8 +276,8 @@ exports.getEventById = async (req, res, next) => {
             } : null,
             isPublic: event.isPublic,
             maxParticipants: event.maxParticipantes,
-            currentParticipants, // Placeholder
-            onWaitingList,       // Placeholder
+            currentParticipants,
+            onWaitingList,
             linksRelevantes: event.linksRelevantes,
             createdAt: event.dataCriacao,
             links: responseLinks
@@ -298,30 +290,30 @@ exports.getEventById = async (req, res, next) => {
     }
 };
 
-// POST /events - Create a new event
+// POST /events
 exports.createEvent = async (req, res, next) => {
     try {
         const {
             title,
-            image, // Assuming image is a filename or URL string
+            image,
             description,
             eventType,
-            eventDate, // Expecting YYYY-MM-DD
-            eventTime, // Expecting HH:MM or HH:MM:SS
+            eventDate,
+            eventTime,
             location,
             maxParticipants,
-            isPublic = true, // Default to true (1 in DB)
-            linksRelevantes // Changed from 'links' to match model
+            isPublic = true,
+            linksRelevantes
         } = req.body;
 
         const idAutor = req.user.userId;
 
-        // --- Validation ---
+        // Validação
         if (!title) throw new ErrorHandler(400, 'The TITLE field cannot be empty.');
-        if (title.length < 5 || title.length > 255) { // Adjusted max length to DB
+        if (title.length < 5 || title.length > 255) {
             throw new ErrorHandler(400, 'The TITLE field must be between 5 to 255 characters.');
         }
-        if (!image) throw new ErrorHandler(400, 'The IMAGE field is required.'); // As per plan
+        if (!image) throw new ErrorHandler(400, 'The IMAGE field is required.');
         if (!eventType) throw new ErrorHandler(400, 'The EVENT TYPE field is required.');
         if (!eventDate) throw new ErrorHandler(400, 'The DATE field is required.');
         if (!eventTime) throw new ErrorHandler(400, 'The TIME field is required.');
@@ -335,7 +327,7 @@ exports.createEvent = async (req, res, next) => {
              throw new ErrorHandler(400, 'The PRIVACY field (isPublic) is required and must be a boolean.');
         }
 
-        // Validate date and time format and if it's in the future
+        // Validate se a data está no futuro
         const combinedDateTime = `${eventDate}T${eventTime}`;
         const eventDateTime = new Date(combinedDateTime);
         if (isNaN(eventDateTime.getTime())) {
@@ -344,7 +336,6 @@ exports.createEvent = async (req, res, next) => {
         if (eventDateTime <= new Date()) {
             throw new ErrorHandler(422, 'The DATE field must be in the future.');
         }
-        // --- End Validation ---
 
         const newEvent = await Event.create({
             idAutor,
@@ -358,9 +349,6 @@ exports.createEvent = async (req, res, next) => {
             maxParticipantes: mp,
             isPublic,
             linksRelevantes,
-            // dataCriacao is handled by defaultValue
-            // estado is handled by defaultValue
-            // visualizacoes is handled by defaultValue
         });
 
         res.status(201).json({
@@ -378,7 +366,7 @@ exports.createEvent = async (req, res, next) => {
     }
 };
 
-// PUT /events/:eventId - Update all data of a specific event
+// PUT /events/:eventId
 exports.updateEvent = async (req, res, next) => {
     try {
         const eventId = parseInt(req.params.eventId, 10);
@@ -404,19 +392,19 @@ exports.updateEvent = async (req, res, next) => {
             return next(new ErrorHandler(404, `Event with ID ${eventId} not found.`));
         }
 
-        // Authorization: Only event creator or admin can modify
+        // AUTH
         if (event.idAutor !== req.user.userId && req.user.role !== 'Administrador') {
             return next(new ErrorHandler(403, 'Only the event creator or an administrator can modify this event.'));
         }
 
-        // Business Rule: Cannot modify less than 12 hours before start
+        // Não deixa mudar 12 horas antes do evento
         const eventStartDateTime = new Date(`${event.data}T${event.hora}`);
         const twelveHoursInMs = 12 * 60 * 60 * 1000;
         if (eventStartDateTime.getTime() - Date.now() < twelveHoursInMs && req.user.role !== 'Administrador') {
             return next(new ErrorHandler(403, 'Events cannot be modified less than 12 hours before start time by non-admins.'));
         }
 
-        // --- Validation (similar to POST, all fields required for PUT) ---
+        // validação
         if (!title) throw new ErrorHandler(400, 'The TITLE field cannot be empty.');
         if (title.length < 5 || title.length > 255) {
              throw new ErrorHandler(400, 'The TITLE field must be between 5 to 255 characters.');
@@ -437,12 +425,9 @@ exports.updateEvent = async (req, res, next) => {
         if (isNaN(newEventDateTime.getTime())) {
             throw new ErrorHandler(400, 'Invalid DATE or TIME format.');
         }
-        // For PUT, if date is changed, it must be in the future. If not changed, this check might be skipped or adjusted.
-        // For simplicity, if date/time is provided, it's validated.
         if ((event.data !== eventDate || event.hora !== eventTime) && newEventDateTime <= new Date()) {
             throw new ErrorHandler(422, 'The DATE field must be in the future if changed.');
         }
-        // --- End Validation ---
 
         await event.update({
             titulo: title,
@@ -472,7 +457,7 @@ exports.updateEvent = async (req, res, next) => {
     }
 };
 
-// PATCH /events/:eventId - Update specific data of an event
+// PATCH /events/:eventId
 exports.patchEvent = async (req, res, next) => {
     try {
         const eventId = parseInt(req.params.eventId, 10);
@@ -485,12 +470,12 @@ exports.patchEvent = async (req, res, next) => {
             return next(new ErrorHandler(404, `Event with ID ${eventId} not found.`));
         }
 
-        // Authorization
+        // AUTH
         if (event.idAutor !== req.user.userId && req.user.role !== 'Administrador') {
             return next(new ErrorHandler(403, 'Only the event creator or an administrator can modify this event.'));
         }
 
-        // Business Rule: 12 hours
+        // 12 horas
         const eventStartDateTime = new Date(`${event.data}T${event.hora}`);
         const twelveHoursInMs = 12 * 60 * 60 * 1000;
         if (eventStartDateTime.getTime() - Date.now() < twelveHoursInMs && req.user.role !== 'Administrador') {
@@ -512,7 +497,6 @@ exports.patchEvent = async (req, res, next) => {
             return next(new ErrorHandler(400, 'No valid fields provided for update.'));
         }
 
-        // --- Validation for provided fields ---
         if (updateData.title !== undefined) {
             if (!updateData.title) throw new ErrorHandler(400, 'The TITLE field cannot be empty.');
             if (updateData.title.length < 5 || updateData.title.length > 255) {
@@ -524,9 +508,7 @@ exports.patchEvent = async (req, res, next) => {
             if (isNaN(mp) || mp <= 1) {
                 throw new ErrorHandler(400, 'The MAX PARTICIPANTS must be greater than 1.');
             }
-            // Plan specific rule: new MAX PARTICIPANTS must be >= previous.
-            // This rule might be too restrictive if an admin needs to lower it for some reason.
-            // For now, implementing as per plan for non-admins.
+            // Novo MAX PARTICIPANTS deve ser >= ao anterior.
             if (req.user.role !== 'Administrador' && mp < event.maxParticipantes) {
                  throw new ErrorHandler(400, 'The new MAX PARTICIPANTS value must be greater than or equal to the previous one.');
             }
@@ -547,25 +529,19 @@ exports.patchEvent = async (req, res, next) => {
             if (newEventDateTime <= new Date()) {
                 throw new ErrorHandler(422, 'The DATE field must be in the future if changed.');
             }
-            updateData.data = newEventDate; // Map to DB field
-            updateData.hora = newEventTime; // Map to DB field
+            updateData.data = newEventDate;
+            updateData.hora = newEventTime;
             delete updateData.eventDate;
             delete updateData.eventTime;
         }
-        // --- End Validation ---
 
         await event.update(updateData);
-        const updatedEvent = await Event.findByPk(eventId); // Fetch again to get all fields
+        const updatedEvent = await Event.findByPk(eventId);
 
         res.status(200).json({
             eventId: updatedEvent.idEvento,
-            // Return only the fields that were actually updated as per plan example
-            // Or return the full updated event resource
-            // For simplicity, returning a success message and ID.
-            // To match plan:
-            // ...Object.fromEntries(Object.entries(updateData).filter(([key]) => allowedFields.includes(key)))
             message: "Event partially updated successfully.",
-            updatedFields: Object.keys(updateData) // Show what was attempted to update
+            updatedFields: Object.keys(updateData)
         });
 
     } catch (error) {
@@ -578,7 +554,7 @@ exports.patchEvent = async (req, res, next) => {
     }
 };
 
-// DELETE /events/:eventId - Delete an event
+// DELETE /events/:eventId
 exports.deleteEvent = async (req, res, next) => {
     try {
         const eventId = parseInt(req.params.eventId, 10);
@@ -591,7 +567,7 @@ exports.deleteEvent = async (req, res, next) => {
             return next(new ErrorHandler(404, `Event with ID ${eventId} not found.`));
         }
 
-        // Authorization
+        // AUTH
         const isCreator = event.idAutor === req.user.userId;
         const isAdmin = req.user.role === 'Administrador';
 
@@ -599,7 +575,7 @@ exports.deleteEvent = async (req, res, next) => {
             return next(new ErrorHandler(403, 'You are not allowed to delete this event.'));
         }
 
-        // Business Rule: 12 hours (only for non-admins)
+        // 12h
         if (!isAdmin) {
             const eventStartDateTime = new Date(`${event.data}T${event.hora}`);
             const twelveHoursInMs = 12 * 60 * 60 * 1000;
@@ -609,7 +585,7 @@ exports.deleteEvent = async (req, res, next) => {
         }
 
         await event.destroy();
-        res.status(204).send(); // No content
+        res.status(204).send();
 
     } catch (error) {
         if (error instanceof ErrorHandler) return next(error);

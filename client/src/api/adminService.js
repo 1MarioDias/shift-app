@@ -1,4 +1,4 @@
-import { authStore } from '../stores/authStore'; // Adjust path if needed
+import { authStore } from '../stores/authStore';
 const API_URL = 'http://127.0.0.1:3000';
 
 export const adminService = {
@@ -25,7 +25,7 @@ export const adminService = {
             const data = await response.json().catch(() => ({}));
             throw new Error(data.errorMessage || data.error || 'Error deleting user.');
         }
-        return true; // Or response status
+        return true;
     },
 
     // Comment Management
