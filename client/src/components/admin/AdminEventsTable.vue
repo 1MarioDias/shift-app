@@ -109,21 +109,19 @@
 
 <script>
 import AdminTable from './AdminTable.vue';
-import { eventosService } from '../../api/eventos';
+import { eventosService } from '../../api/eventos'; // Path to your service
 
 export default {
   name: 'AdminEventsTable',
-  components: {
-    AdminTable
-  },
+  components: { AdminTable },
   data() {
     return {
       columns: [
         { key: 'title', label: 'Title', sortable: true },
         { key: 'eventType', label: 'Type', sortable: true },
-        { key: 'date', label: 'Date', sortable: true },
+        { key: 'data', label: 'Date', sortable: true }, // Changed 'date' to 'data'
         { key: 'location', label: 'Location', sortable: true },
-        { key: 'exclusiveness', label: 'Exclusiveness', sortable: true }
+        { key: 'isPublic', label: 'Exclusiveness', sortable: true }
       ],
       events: [],
       currentPage: 0,
@@ -134,79 +132,83 @@ export default {
         query: '',
         eventType: '',
         datetime: '',
-        location: '',
-        isPublic: ''
+        isPublic: '' 
       },
       loading: false,
-      error: null
-    }
+      error: null,
+      sortBy: 'data',
+      sortOrder: 'asc'
+    };
   },
   methods: {
-    formatDate(date) {
-      return new Date(date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+    formatDate(dateString) {
+      if (!dateString) return 'N/A';
+      return new Date(dateString).toLocaleString('en-GB');
     },
     async fetchEvents() {
+      this.loading = true;
+      this.error = null;
       try {
-        this.loading = true;
-        const response = await eventosService.getAdminEvents({
+        // Use getAllEvents which now handles admin context via token
+        const response = await eventosService.getAllEvents({
           page: this.currentPage,
           pageSize: this.pageSize,
-          ...this.filters
+          query: this.filters.query,
+          eventType: this.filters.eventType,
+          datetime: this.filters.datetime,
+          isPublic: this.filters.isPublic === '' ? undefined : this.filters.isPublic, // Pass undefined if not specified
+          sortBy: this.sortBy,
+          order: this.sortOrder
         });
-
         this.events = response.data;
         this.totalItems = response.pagination.totalItems;
         this.totalPages = response.pagination.totalPages;
       } catch (err) {
-        this.error = err.message;
-        console.error('Failed to fetch events:', err);
+        this.error = err.message || 'Failed to fetch events.';
+        console.error(err);
       } finally {
         this.loading = false;
       }
     },
-    async handleSearch(query) {
+    handleSearch(query) {
       this.filters.query = query;
       this.currentPage = 0;
-      await this.fetchEvents();
+      this.fetchEvents();
     },
-    async handleSort({ key, order }) {
-      await this.fetchEvents();
+    handleSort({ key, order }) {
+      this.sortBy = key;
+      this.sortOrder = order;
+      this.fetchEvents();
     },
-    async handlePageChange(page) {
+    handlePageChange(page) {
       this.currentPage = page;
-      await this.fetchEvents();
+      this.fetchEvents();
     },
     handleEdit(eventId) {
-      // alterar isto
       console.log('Edit event:', eventId);
+      // Implement navigation to an edit page or modal
     },
-    handleDelete(eventId) {
-      // alterar isto
-      console.log('Delete event:', eventId);
+    async handleDelete(eventId) {
+      if (confirm('Are you sure you want to delete this event?')) {
+        try {
+          // You'll need an adminService.deleteEvent(eventId) method
+          // For now, just logging and refetching
+          console.log('Delete event (not implemented in service yet):', eventId);
+          // await adminService.deleteEvent(eventId); 
+          this.fetchEvents();
+        } catch (err) {
+          alert(err.message || 'Failed to delete event.');
+        }
+      }
     }
   },
   watch: {
-    'filters.eventType': function() {
-      this.currentPage = 0;
-      this.fetchEvents();
-    },
-    'filters.datetime': function() {
-      this.currentPage = 0;
-      this.fetchEvents();
-    },
-    'filters.isPublic': function() {
-      this.currentPage = 0;
-      this.fetchEvents();
-    }
+    'filters.eventType': function() { this.currentPage = 0; this.fetchEvents(); },
+    'filters.datetime': function() { this.currentPage = 0; this.fetchEvents(); },
+    'filters.isPublic': function() { this.currentPage = 0; this.fetchEvents(); }
   },
   mounted() {
     this.fetchEvents();
   }
-}
+};
 </script>

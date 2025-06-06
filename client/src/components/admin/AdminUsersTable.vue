@@ -48,72 +48,87 @@
 
 <script>
 import AdminTable from './AdminTable.vue';
+import { adminService } from '../../api/adminService'; // Adjust path
 
 export default {
   name: 'AdminUsersTable',
-  components: {
-    AdminTable
-  },
+  components: { AdminTable },
   data() {
     return {
       columns: [
         { key: 'nome', label: 'Name', sortable: true },
         { key: 'email', label: 'Email', sortable: true },
-        { key: 'dataRegisto', label: 'Registration Date', sortable: true },
-        { key: 'tipoUtilizador', label: 'Role', sortable: true }
+        { key: 'dataRegisto', label: 'Registration Date', sortable: true }, // Matches API: createdAt
+        { key: 'tipoUtilizador', label: 'Role', sortable: true } // Matches API: role
       ],
-      users: [
-        {
-          idUtilizador: 1,
-          nome: 'John Doe',
-          email: 'john@example.com',
-          dataRegisto: '2025-01-15',
-          tipoUtilizador: 'User',
-          imagemUtilizador: null
-        },
-        {
-          idUtilizador: 2,
-          nome: 'Jane Smith',
-          email: 'jane@example.com',
-          dataRegisto: '2025-02-20',
-          tipoUtilizador: 'Moderator',
-          imagemUtilizador: null
-        },
-        {
-          idUtilizador: 3,
-          nome: 'Admin User',
-          email: 'admin@example.com',
-          dataRegisto: '2024-12-01',
-          tipoUtilizador: 'Admin',
-          imagemUtilizador: null
-        }
-      ],
+      users: [],
       currentPage: 0,
-      totalPages: 1,
-      totalItems: 3,
-      pageSize: 10
-    }
+      totalPages: 0,
+      totalItems: 0,
+      pageSize: 10,
+      loading: false,
+      error: null,
+      searchQuery: '',
+      sortBy: 'dataRegisto',
+      sortOrder: 'desc'
+    };
   },
   methods: {
-    formatDate(date) {
-      return new Date(date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
+    formatDate(dateString) {
+      if (!dateString) return 'N/A';
+      return new Date(dateString).toLocaleDateString('en-GB', { // Or your preferred locale
+        year: 'numeric', month: 'long', day: 'numeric'
       });
     },
+    async fetchUsers() {
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await adminService.getUsers({
+          page: this.currentPage,
+          pageSize: this.pageSize,
+          query: this.searchQuery,
+          sortBy: this.sortBy,
+          order: this.sortOrder
+        });
+        this.users = response.data.map(u => ({...u, idUtilizador: u.userId, dataRegisto: u.createdAt, tipoUtilizador: u.role}));
+        this.totalItems = response.pagination.totalItems;
+        this.totalPages = response.pagination.totalPages;
+      } catch (err) {
+        this.error = err.message || 'Failed to fetch users.';
+        console.error(err);
+      } finally {
+        this.loading = false;
+      }
+    },
     handleSearch(query) {
-      console.log('Search:', query);
+      this.searchQuery = query;
+      this.currentPage = 0;
+      this.fetchUsers();
     },
     handleSort({ key, order }) {
-      console.log('Sort:', key, order);
+      this.sortBy = key;
+      this.sortOrder = order;
+      this.fetchUsers();
     },
     handlePageChange(page) {
       this.currentPage = page;
+      this.fetchUsers();
     },
-    handleDelete(userId) {
-      console.log('Delete user:', userId);
+    async handleDelete(userId) {
+      if (confirm('Are you sure you want to delete this user?')) {
+        try {
+          await adminService.deleteUser(userId);
+          this.fetchUsers(); // Refresh list
+        } catch (err) {
+          alert(err.message || 'Failed to delete user.');
+          console.error(err);
+        }
+      }
     }
+  },
+  mounted() {
+    this.fetchUsers();
   }
-}
+};
 </script>
