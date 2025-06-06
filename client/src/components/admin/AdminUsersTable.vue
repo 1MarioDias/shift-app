@@ -87,11 +87,21 @@ export default {
         const response = await adminService.getUsers({
           page: this.currentPage,
           pageSize: this.pageSize,
-          query: this.searchQuery,
+          query: this.searchQuery, // searchQuery is v-model'd in AdminTable and emitted
           sortBy: this.sortBy,
           order: this.sortOrder
         });
-        this.users = response.data.map(u => ({...u, idUtilizador: u.userId, dataRegisto: u.createdAt, tipoUtilizador: u.role}));
+        // Correctly map 'name' from API to 'nome' for the template
+        // The backend's /users endpoint (getAllUsers) returns: { userId, name, email, createdAt, role }
+        this.users = response.data.map(u => ({
+          idUtilizador: u.userId, // Map userId to idUtilizador if your template uses that
+          nome: u.name,           // Map API's 'name' to 'nome'
+          email: u.email,
+          dataRegisto: u.createdAt, // Map API's 'createdAt' to 'dataRegisto'
+          tipoUtilizador: u.role,   // Map API's 'role' to 'tipoUtilizador'
+          // imagemUtilizador: u.profileImageUrl // This field is not provided by the current backend API for the user list
+                                                // So, user.imagemUtilizador in template will be undefined, falling back to default.
+        }));
         this.totalItems = response.pagination.totalItems;
         this.totalPages = response.pagination.totalPages;
       } catch (err) {
