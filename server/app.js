@@ -16,9 +16,6 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Comment out this line:
-// app.options('*', cors(corsOptions)); 
-
 app.use(express.json());
 
 app.use((req, res, next) => {
@@ -30,7 +27,6 @@ app.use((req, res, next) => {
     next()
 });
 
-// Ensure these are still commented out:
 app.use('/events', require('./routes/events.routes.js'));
 app.use('/users', require('./routes/users.routes.js'));
 app.use('/comments', require('./routes/comments.routes.js'));
@@ -40,10 +36,42 @@ app.use((req, res, next) => {
 });
 
 app.use((err, req, res, next) => {
-    console.error(err); // Make sure you're seeing the error here
-    // ... rest of your error handler
-    if (err.type === 'entity.parse.failed') // ...
-    // ... (keep your existing error handler logic)
+    console.error(err); 
+    if (err.type === 'entity.parse.failed')
+        return res.status(400).json({ error: 'Invalid JSON payload! Check if your body data is a valid JSON.' });
+
+    // Sequelize validation errors (ALL models)
+    if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError') {
+        return res.status(400).json({
+            error: 'Validation error',
+            details: err.errors.map(e => ({
+                field: e.path,
+                message: e.message
+            }))
+        });
+    }
+
+    // SequelizeDatabaseError related to an invalid ENUM value (USERS table -> role field)
+    if (err.name === 'SequelizeDatabaseError') {
+        if (err.original.code === 'ER_CHECK_CONSTRAINT_VIOLATED') {
+            return res.status(400).json({
+                error: 'Invalid value for enumerated field',
+                message: err.message
+            });
+        }
+        if (err.original.code === 'ER_BAD_NULL_ERROR') {
+            return res.status(400).json({
+                error: 'Missing mandatory field',
+                message: err.message
+            });
+        }
+        if (err.original.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({
+                error: 'Duplicate entry',
+                message: err.message
+            });
+        }
+    }
     res.status(err.statusCode || 500).json({ error: err.message || 'Internal Server Error' });
 });
 

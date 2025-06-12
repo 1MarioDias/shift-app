@@ -36,20 +36,33 @@
 
     <!-- Botões -->
     <div class="flex gap-5 items-center">
-      <!-- Ícone do utilizador -->
-      <RouterLink to="/user">
-        <button class="w-12 h-12 rounded-full overflow-hidden border-2 border-white cursor-pointer">
-          <img :src="profileImage" alt="User" class="w-full h-full object-cover" />
-        </button>
-      </RouterLink>
-      <!-- Botão Create Event -->
-      <RouterLink to="/create">
-        <button
-          class="flex items-center justify-center gap-2 px-5 py-2 rounded-2xl bg-[#FAF9F6] text-black transition duration-300 hover:bg-[#426CFF] hover:text-white cursor-pointer"
-        >
-          <span class="text-xs font-medium">Create Event +</span>
-        </button>
-      </RouterLink>
+      <!-- Authenticated User Buttons -->
+      <template v-if="isUserLoggedIn">
+        <!-- Ícone do utilizador -->
+        <RouterLink to="/user"> <!-- This is your /me route -->
+          <button class="w-12 h-12 rounded-full overflow-hidden border-2 border-white cursor-pointer">
+            <img :src="profileImage" alt="User" class="w-full h-full object-cover" />
+          </button>
+        </RouterLink>
+        <!-- Botão Create Event -->
+        <RouterLink to="/create">
+          <button
+            class="flex items-center justify-center gap-2 px-5 py-2 rounded-2xl bg-[#FAF9F6] text-black transition duration-300 hover:bg-[#426CFF] hover:text-white cursor-pointer"
+          >
+            <span class="text-xs font-medium">Create Event +</span>
+          </button>
+        </RouterLink>
+      </template>
+      <!-- Login Button for Unauthenticated Users -->
+      <template v-else>
+        <RouterLink to="/login">
+          <button
+            class="flex items-center justify-center gap-2 px-5 py-2 rounded-2xl bg-[#FAF9F6] text-black transition duration-300 hover:bg-[#426CFF] hover:text-white cursor-pointer"
+          >
+            <span class="text-xs font-medium">Login</span>
+          </button>
+        </RouterLink>
+      </template>
     </div>
   </nav>
 
@@ -60,6 +73,8 @@
 import { RouterLink, RouterView } from 'vue-router';
 import SearchBar from "./SearchBar.vue";
 import { userStore } from '../stores/userStore';
+import { authStore } from '../stores/authStore';
+
 
 export default {
   name: "Navbar",
@@ -92,6 +107,9 @@ export default {
     },
     username() {
       return userStore.username || 'User1';
+    },
+    isUserLoggedIn() {
+      return authStore.isLoggedIn();
     }
   },
 };
