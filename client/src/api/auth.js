@@ -1,6 +1,7 @@
 const API_URL = 'http://127.0.0.1:3000';
 
 import { authStore } from '../stores/authStore';
+import router from '../router';
 
 export const authService = {
     async login(credentials) {
@@ -49,6 +50,9 @@ export const authService = {
 
     logout() {
         authStore.clearAuth();
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("userProfileImage");
+        localStorage.removeItem("username");
         // redirect para o login
         router.push('/login'); 
     },

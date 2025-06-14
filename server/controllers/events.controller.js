@@ -475,53 +475,48 @@ exports.patchEvent = async (req, res, next) => {
             return next(new ErrorHandler(403, 'Only the event creator or an administrator can modify this event.'));
         }
 
-        // 12 horas
+        // 12-hour rule check
         const eventStartDateTime = new Date(`${event.data}T${event.hora}`);
         const twelveHoursInMs = 12 * 60 * 60 * 1000;
         if (eventStartDateTime.getTime() - Date.now() < twelveHoursInMs && req.user.role !== 'Administrador') {
-             return next(new ErrorHandler(403, 'Events cannot be modified less than 12 hours before start time by non-admins.'));
+            return next(new ErrorHandler(403, 'Events cannot be modified less than 12 hours before start time by non-admins.'));
         }
 
+        // Create a fresh object for database update with the correct field names
         const updateData = {};
-        const allowedFields = ['title', 'image', 'description', 'eventType', 'eventDate', 'eventTime', 'location', 'maxParticipants', 'isPublic', 'linksRelevantes'];
         let changesMade = false;
 
-        for (const key in req.body) {
-            if (allowedFields.includes(key)) {
-                updateData[key] = req.body[key];
+        // Map frontend field names to database model field names
+        const fieldMapping = {
+            'title': 'titulo',
+            'description': 'descricao',
+            'eventType': 'tipoEvento',
+            'location': 'localizacao',
+            'maxParticipants': 'maxParticipantes',
+            // These fields don't need mapping (same name)
+            'isPublic': 'isPublic',
+            'linksRelevantes': 'linksRelevantes'
+        };
+
+        // Process each field from the request body
+        for (const [frontendField, value] of Object.entries(req.body)) {
+            // Skip eventDate and eventTime as they're handled separately
+            if (frontendField === 'eventDate' || frontendField === 'eventTime') {
+                continue;
+            }
+            
+            // If this field has a mapping, use it
+            if (fieldMapping[frontendField]) {
+                updateData[fieldMapping[frontendField]] = value;
                 changesMade = true;
             }
         }
 
-        if (!changesMade) {
-            return next(new ErrorHandler(400, 'No valid fields provided for update.'));
-        }
+        // Handle date and time specially as before
+        const newEventDate = req.body.eventDate || event.data;
+        const newEventTime = req.body.eventTime || event.hora;
 
-        if (updateData.title !== undefined) {
-            if (!updateData.title) throw new ErrorHandler(400, 'The TITLE field cannot be empty.');
-            if (updateData.title.length < 5 || updateData.title.length > 255) {
-                throw new ErrorHandler(400, 'The TITLE field must be between 5 to 255 characters.');
-            }
-        }
-        if (updateData.maxParticipants !== undefined) {
-            const mp = parseInt(updateData.maxParticipants, 10);
-            if (isNaN(mp) || mp <= 1) {
-                throw new ErrorHandler(400, 'The MAX PARTICIPANTS must be greater than 1.');
-            }
-            // Novo MAX PARTICIPANTS deve ser >= ao anterior.
-            if (req.user.role !== 'Administrador' && mp < event.maxParticipantes) {
-                 throw new ErrorHandler(400, 'The new MAX PARTICIPANTS value must be greater than or equal to the previous one.');
-            }
-            updateData.maxParticipants = mp;
-        }
-        if (updateData.isPublic !== undefined && typeof updateData.isPublic !== 'boolean') {
-            throw new ErrorHandler(400, 'The isPublic field must be a boolean.');
-        }
-
-        const newEventDate = updateData.eventDate || event.data;
-        const newEventTime = updateData.eventTime || event.hora;
-
-        if (updateData.eventDate || updateData.eventTime) {
+        if (req.body.eventDate || req.body.eventTime) {
             const newEventDateTime = new Date(`${newEventDate}T${newEventTime}`);
             if (isNaN(newEventDateTime.getTime())) {
                 throw new ErrorHandler(400, 'Invalid DATE or TIME format provided for update.');
@@ -531,10 +526,37 @@ exports.patchEvent = async (req, res, next) => {
             }
             updateData.data = newEventDate;
             updateData.hora = newEventTime;
-            delete updateData.eventDate;
-            delete updateData.eventTime;
+            changesMade = true;
         }
 
+        // Handle validations for fields
+        if (updateData.titulo !== undefined) {
+            if (!updateData.titulo) throw new ErrorHandler(400, 'The TITLE field cannot be empty.');
+            if (updateData.titulo.length < 5 || updateData.titulo.length > 255) {
+                throw new ErrorHandler(400, 'The TITLE field must be between 5 to 255 characters.');
+            }
+        }
+
+        if (updateData.maxParticipantes !== undefined) {
+            const mp = parseInt(updateData.maxParticipantes, 10);
+            if (isNaN(mp) || mp <= 1) {
+                throw new ErrorHandler(400, 'The MAX PARTICIPANTS must be greater than 1.');
+            }
+            if (req.user.role !== 'Administrador' && mp < event.maxParticipantes) {
+                throw new ErrorHandler(400, 'The new MAX PARTICIPANTS value must be greater than or equal to the previous one for non-admins.');
+            }
+            updateData.maxParticipantes = mp;  // Ensure it's a number
+        }
+
+        if (updateData.isPublic !== undefined && typeof updateData.isPublic !== 'boolean') {
+            throw new ErrorHandler(400, 'The isPublic field must be a boolean.');
+        }
+
+        if (!changesMade) {
+            return next(new ErrorHandler(400, 'No valid fields provided for update.'));
+        }
+
+        // Do the actual update with properly mapped fields
         await event.update(updateData);
         const updatedEvent = await Event.findByPk(eventId);
 
