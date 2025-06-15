@@ -194,5 +194,33 @@ export const eventosService = {
                 throw new Error(String(error) || `An unknown error occurred while deleting event ${eventId}.`);
             }
         }
-    }
+    },
+    async createEvent(eventFormData) {
+        if (!authStore.isLoggedIn()) {
+            return Promise.reject({ status: 401, message: 'Authentication required to create an event.' });
+        }
+        try {
+            const response = await fetch(`${API_URL}/events`, {
+                method: 'POST',
+                headers: {
+                    ...authStore.getAuthHeaders()
+                },
+                body: eventFormData
+            });
+
+            const responseData = await response.json();
+
+            if (!response.ok) {
+                const message = responseData.errorMessage || responseData.message || responseData.error || `Error creating event. Status: ${response.status}`;
+                throw { status: response.status, message: message, details: responseData.details };
+            }
+            return responseData;
+        } catch (error) {
+            console.error('API Error creating event:', error);
+            if (error.status) {
+                throw error;
+            }
+            throw { status: 500, message: error.message || 'An unexpected error occurred while creating the event.' };
+        }
+    },
 };

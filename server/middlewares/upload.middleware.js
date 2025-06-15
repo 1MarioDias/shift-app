@@ -2,23 +2,26 @@ const multer = require('multer');
 const path = require('path');
 const { ErrorHandler } = require('../utils/error');
 
-// Configure multer for memory storage
 const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif/;
-    const mimetype = allowedTypes.test(file.mimetype);
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const allowedFiletypes = /jpeg|jpg|png|gif/;
+    const allowedMimetypes = /image\/jpeg|image\/jpg|image\/png|image\/gif/;
 
-    if (mimetype && extname) {
-        return cb(null, true);
+    const extnameValid = allowedFiletypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetypeValid = allowedMimetypes.test(file.mimetype);
+
+    if (mimetypeValid && extnameValid) {
+        cb(null, true); // Accept file
+    } else {
+        // Reject file and pass an error that Multer should forward to Express's error handler
+        cb(new ErrorHandler(400, 'Upload failed. Invalid file type. Only JPEG, JPG, PNG, GIF image types are allowed.'));
     }
-    cb(new ErrorHandler(400, 'Error: File upload only supports the following filetypes - ' + allowedTypes));
 };
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB file size limit
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
     fileFilter: fileFilter
 });
 

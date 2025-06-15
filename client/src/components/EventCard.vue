@@ -1,7 +1,7 @@
 <template>
     <article class="mt-15 relative">
         <img
-            :src="image ? `/images/${image}` : '/images/cardImage.png'"
+            :src="image || '/images/cardImage.png'"
             :alt="title"
             class="w-full h-[360px] object-cover rounded-[20px]"
         />
@@ -36,7 +36,8 @@
     props: {
       image: {
         type: String,
-        required: true
+        required: true,
+        default: ''
       },
       type: {
         type: String,

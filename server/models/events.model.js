@@ -27,7 +27,7 @@ const Event = db.sequelize.define('eventos', {
         allowNull: false
     },
     imagem: {
-        type: DataTypes.STRING(255),
+        type: DataTypes.STRING,
         allowNull: true
     },
     descricao: {
@@ -71,8 +71,11 @@ const Event = db.sequelize.define('eventos', {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true
+    },
+    cloudinaryId: {
+    type: DataTypes.STRING(400),
+    allowNull: true
     }
-
 }, {
     timestamps: false,
     tableName: 'eventos'
