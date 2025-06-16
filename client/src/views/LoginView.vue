@@ -171,6 +171,7 @@
 import { RouterLink } from 'vue-router';
 import { authService } from '../api/auth';
 import VideoBackground from '../components/VideoBackground.vue';
+import { authStore } from '../stores/authStore';
 
 export default {
   name: 'LoginView',
@@ -241,10 +242,13 @@ export default {
             password: ''
         };
 
-        // USAR DEPOIS: redirect depois da notificação desaparecer
-        // setTimeout(() => {
-        //     this.$router.push('/');
-        // }, 2000);
+        setTimeout(() => {
+            if (authStore.isAdmin()) {
+                this.$router.push('/admin');
+            } else {
+                this.$router.push('/user');
+            }
+        }, 1500);
 
       } catch (err) {
         this.showNotification(err.message, 'error');

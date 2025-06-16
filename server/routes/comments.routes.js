@@ -1,10 +1,25 @@
 const express = require('express');
-const router = express.Router();
 const commentsController = require('../controllers/comments.controller');
-const { authenticate, isAdmin, requireAuth } = require('../middlewares/auth.middleware');
+const { authenticate, requireAuth, isAdmin } = require('../middlewares/auth.middleware');
 
-// rotas de admin para comentários
-router.get('/', authenticate, requireAuth, isAdmin, commentsController.getAllComments);
-router.delete('/:commentId', authenticate, requireAuth, isAdmin, commentsController.deleteComment);
+const eventCommentsRouter = express.Router({ mergeParams: true });
 
-module.exports = router;
+// GET /events/:eventId/comments - Lista os Comentários de um Evento específico
+eventCommentsRouter.get('/', authenticate, commentsController.getCommentsForEvent);
+
+// POST /events/:eventId/comments - Adiciona um Comentário num Evento específico
+eventCommentsRouter.post('/', authenticate, requireAuth, commentsController.addCommentToEvent);
+
+const generalCommentsRouter = express.Router();
+// dá handle às rotas de comentários gerais
+
+// GET /comments - Moderador - Lista TODOS os comentários
+generalCommentsRouter.get('/', authenticate, requireAuth, isAdmin, commentsController.getAllComments);
+
+// DELETE /comments/:commentId - apaga o comentário - admin ou autor do comentário
+generalCommentsRouter.delete('/:commentId', authenticate, requireAuth, commentsController.deleteComment);
+
+module.exports = {
+    eventCommentsRouter,
+    generalCommentsRouter
+};

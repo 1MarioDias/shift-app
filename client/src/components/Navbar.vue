@@ -36,20 +36,56 @@
 
     <!-- Botões -->
     <div class="flex gap-5 items-center">
-      <!-- Ícone do utilizador -->
-      <RouterLink to="/user">
-        <button class="w-12 h-12 rounded-full overflow-hidden border-2 border-white cursor-pointer">
-          <img :src="profileImage" alt="User" class="w-full h-full object-cover" />
-        </button>
-      </RouterLink>
-      <!-- Botão Create Event -->
-      <RouterLink to="/create">
-        <button
-          class="flex items-center justify-center gap-2 px-5 py-2 rounded-2xl bg-[#FAF9F6] text-black transition duration-300 hover:bg-[#426CFF] hover:text-white cursor-pointer"
-        >
-          <span class="text-xs font-medium">Create Event +</span>
-        </button>
-      </RouterLink>
+      <!-- Authenticated User Buttons -->
+      <template v-if="isUserLoggedIn">
+        <!-- Ícone do utilizador -->
+        <div class="relative">
+          <button 
+            @click="toggleProfileDropdown" 
+            class="w-12 h-12 rounded-full overflow-hidden border-2 border-white cursor-pointer"
+          >
+            <img :src="profileImage" alt="User" class="w-full h-full object-cover" />
+          </button>
+          
+          <!-- Dropdown Menu -->
+          <div 
+            v-show="showProfileDropdown" 
+            class="absolute right-0 mt-2 py-2 w-48 bg-white bg-opacity-10 backdrop-blur-md rounded-xl shadow-lg z-50 border border-white border-opacity-20"
+          >
+            <RouterLink 
+              to="/user" 
+              class="block px-4 py-2 text-sm text-black hover:bg-white hover:bg-opacity-10 transition-colors"
+              @click="showProfileDropdown = false"
+            >
+              My Profile
+            </RouterLink>
+            <button 
+              @click="handleLogout" 
+              class="block w-full text-left px-4 py-2 text-sm text-#ff0000 hover:bg-white hover:bg-opacity-10 transition-colors"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+        <!-- Botão Create Event -->
+        <RouterLink to="/create">
+          <button
+            class="flex items-center justify-center gap-2 px-5 py-2 rounded-2xl bg-[#FAF9F6] text-black transition duration-300 hover:bg-[#426CFF] hover:text-white cursor-pointer"
+          >
+            <span class="text-xs font-medium">Create Event +</span>
+          </button>
+        </RouterLink>
+      </template>
+      <!-- Login Button for Unauthenticated Users -->
+      <template v-else>
+        <RouterLink to="/login">
+          <button
+            class="flex items-center justify-center gap-2 px-5 py-2 rounded-2xl bg-[#FAF9F6] text-black transition duration-300 hover:bg-[#426CFF] hover:text-white cursor-pointer"
+          >
+            <span class="text-xs font-medium">Login</span>
+          </button>
+        </RouterLink>
+      </template>
     </div>
   </nav>
 
@@ -60,6 +96,9 @@
 import { RouterLink, RouterView } from 'vue-router';
 import SearchBar from "./SearchBar.vue";
 import { userStore } from '../stores/userStore';
+import { authStore } from '../stores/authStore';
+import { authService } from '../api/auth';
+
 
 export default {
   name: "Navbar",
@@ -71,6 +110,7 @@ export default {
   data() {
     return {
       isHovered: false,
+      showProfileDropdown: false,
       searchIcon: `
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="11" cy="11" r="8" stroke="#FAF9F6" stroke-width="2"/>
@@ -92,8 +132,37 @@ export default {
     },
     username() {
       return userStore.username || 'User1';
+    },
+    isUserLoggedIn() {
+      return authStore.isLoggedIn();
     }
   },
+  methods: {
+    toggleProfileDropdown() {
+      this.showProfileDropdown = !this.showProfileDropdown;
+    },
+    handleLogout() {
+      // Close the dropdown
+      this.showProfileDropdown = false;
+      
+      // Call the authService logout method
+      authService.logout();
+    },
+    // Close dropdown when clicking outside
+    closeDropdownOnOutsideClick(event) {
+      if (this.showProfileDropdown && !event.target.closest('.relative')) {
+        this.showProfileDropdown = false;
+      }
+    }
+  },
+  mounted() {
+    // Add event listener to close dropdown when clicking outside
+    document.addEventListener('click', this.closeDropdownOnOutsideClick);
+  },
+  beforeUnmount() {
+    // Clean up event listener
+    document.removeEventListener('click', this.closeDropdownOnOutsideClick);
+  }
 };
 </script>
 

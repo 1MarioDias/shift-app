@@ -13,7 +13,7 @@
          <EventCard 
              v-for="event in events" 
              :key="event.eventId"
-             :image="event.image || `../../public/images/cardImage.png`"
+             :image="event.image"
              :type="event.eventType"
              :date="formatDate(event.date)"
              :location="event.location"

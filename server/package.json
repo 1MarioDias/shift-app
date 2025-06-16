@@ -6,9 +6,9 @@
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.14.1",
     "nodemon": "^3.1.10",
-    "sequelize": "^6.37.7"
-  },
-  "dependencies": {
-    "cors": "^2.8.5"
+    "sequelize": "^6.37.7",
+    "cloudinary": "^2.6.1",
+    "cors": "^2.8.5",
+    "multer": "^2.0.1"
   }
 }

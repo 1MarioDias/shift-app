@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const usersController = require('../controllers/users.controller'); // Renamed from authController for clarity
+const usersController = require('../controllers/users.controller');
 const { authenticate, isAdmin, requireAuth } = require('../middlewares/auth.middleware');
 
 // Public routes
@@ -11,7 +11,7 @@ router.post('/login', usersController.login); // Login
 router.get('/me', authenticate, requireAuth, usersController.getUserProfile);
 
 // Admin routes (require valid token + admin role)
-router.get('/', authenticate, requireAuth, isAdmin, usersController.getAllUsers); // List all users
-router.delete('/:userId', authenticate, requireAuth, isAdmin, usersController.deleteUser); // Delete a user
+router.get('/', authenticate, requireAuth, isAdmin, usersController.getAllUsers);
+router.delete('/:userId', authenticate, requireAuth, isAdmin, usersController.deleteUser);
 
 module.exports = router;

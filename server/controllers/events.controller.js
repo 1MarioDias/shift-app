@@ -2,6 +2,7 @@ const Event = require('../models/events.model');
 const User = require('../models/users.model');
 const { Op } = require('sequelize');
 const { ErrorHandler } = require('../utils/error');
+const cloudinary = require('../config/cloudinaryConfig');
 
 // Helper da paginação e response links
 const buildEventResponse = (req, pageNum, pageSizeNum, count, formattedEvents, queryParamsForLinks = {}) => {
@@ -292,77 +293,135 @@ exports.getEventById = async (req, res, next) => {
 
 // POST /events
 exports.createEvent = async (req, res, next) => {
+    let tempImagePublicId = null;
+
+    console.log('--- Create Event ---');
+    console.log('req.file:', req.file); // DEBUG
+    console.log('req.body:', req.body); // DEBUG
+
     try {
         const {
-            title,
-            image,
-            description,
-            eventType,
-            eventDate,
-            eventTime,
-            location,
-            maxParticipants,
-            isPublic = true,
-            linksRelevantes
+            title, description, eventType, eventDate, eventTime,
+            location, maxParticipants, isPublic, linksRelevantes
         } = req.body;
 
         const idAutor = req.user.userId;
 
-        // Validação
         if (!title) throw new ErrorHandler(400, 'The TITLE field cannot be empty.');
-        if (title.length < 5 || title.length > 255) {
-            throw new ErrorHandler(400, 'The TITLE field must be between 5 to 255 characters.');
-        }
-        if (!image) throw new ErrorHandler(400, 'The IMAGE field is required.');
-        if (!eventType) throw new ErrorHandler(400, 'The EVENT TYPE field is required.');
-        if (!eventDate) throw new ErrorHandler(400, 'The DATE field is required.');
-        if (!eventTime) throw new ErrorHandler(400, 'The TIME field is required.');
-        if (!location) throw new ErrorHandler(400, 'The LOCATION field is required.');
 
-        const mp = parseInt(maxParticipants, 10);
-        if (isNaN(mp) || mp <= 1) {
-            throw new ErrorHandler(400, 'The MAX PARTICIPANTS must be greater than 1.');
-        }
-        if (typeof isPublic !== 'boolean') {
-             throw new ErrorHandler(400, 'The PRIVACY field (isPublic) is required and must be a boolean.');
+        let mp = null;
+        if (maxParticipants !== undefined && maxParticipants !== null && maxParticipants !== '') {
+            mp = parseInt(maxParticipants, 10);
+            if (isNaN(mp) || mp <= 1) {
+                throw new ErrorHandler(400, 'If provided, MAX PARTICIPANTS must be a number greater than 1.');
+            }
         }
 
-        // Validate se a data está no futuro
+        let finalIsPublic = true;
+        if (req.body.isPublic !== undefined) {
+            if (typeof req.body.isPublic === 'boolean') {
+                finalIsPublic = req.body.isPublic;
+            } else if (req.body.isPublic === 'true') {
+                finalIsPublic = true;
+            } else if (req.body.isPublic === 'false') {
+                finalIsPublic = false;
+            } else {
+                throw new ErrorHandler(400, 'The PRIVACY (isPublic) field must be a boolean (true/false) or string "true"/"false".');
+            }
+        }
+        
         const combinedDateTime = `${eventDate}T${eventTime}`;
         const eventDateTime = new Date(combinedDateTime);
         if (isNaN(eventDateTime.getTime())) {
-            throw new ErrorHandler(400, 'Invalid DATE or TIME format.');
+            throw new ErrorHandler(400, 'Invalid DATE or TIME format. Please use YYYY-MM-DD and HH:MM.');
         }
         if (eventDateTime <= new Date()) {
-            throw new ErrorHandler(422, 'The DATE field must be in the future.');
+            throw new ErrorHandler(422, 'The event DATE and TIME must be in the future.');
+        }
+
+        let imageUrl = null;
+
+        if (req.file) {
+            console.log('req.file is PRESENT. Attempting Cloudinary upload.'); // DEBUG
+            if (!req.file.buffer) {
+                console.error('Error: req.file exists but req.file.buffer is missing.');
+                return next(new ErrorHandler(500, 'File buffer is missing after upload.'));
+            }
+            try {
+                const result = await new Promise((resolve, reject) => {
+                    const uploadStream = cloudinary.uploader.upload_stream(
+                        {
+                            resource_type: 'image',
+                            folder: 'shift-app/events',
+                        },
+                        (error, result) => {
+                            if (error) {
+                                console.error('Cloudinary upload stream error:', error);
+                                return reject(new ErrorHandler(500, `Cloudinary image upload failed: ${error.message}`));
+                            }
+                            resolve(result);
+                        }
+                    );
+                    uploadStream.end(req.file.buffer);
+                });
+
+                if (!result || !result.secure_url) {
+                    console.error('Cloudinary upload did not return a secure URL. Result:', result);
+                    return next(new ErrorHandler(500, 'Cloudinary upload did not return a secure URL.'));
+                }
+                imageUrl = result.secure_url;
+                tempImagePublicId = result.public_id;
+                console.log('Cloudinary upload successful. Image URL:', imageUrl); // DEBUG
+            } catch (uploadError) {
+                console.error('Catch block for Cloudinary upload error:', uploadError); // DEBUG
+                const errorToPass = uploadError instanceof ErrorHandler ? uploadError : new ErrorHandler(500, `Image upload processing error: ${uploadError.message}`);
+                return next(errorToPass);
+            }
+        } else {
+            console.log('req.file is ABSENT. Using default hardcoded image.'); // DEBUG
+            imageUrl = 'https://res.cloudinary.com/dbbypewvv/image/upload/v1749942289/cardImage_joengm.png';
         }
 
         const newEvent = await Event.create({
             idAutor,
             titulo: title,
-            imagem: image,
-            descricao,
+            imagem: imageUrl,
+            descricao: description,
             tipoEvento: eventType,
             data: eventDate,
             hora: eventTime,
             localizacao: location,
             maxParticipantes: mp,
-            isPublic,
+            isPublic: finalIsPublic,
             linksRelevantes,
+            cloudinaryId: tempImagePublicId
         });
 
         res.status(201).json({
             eventId: newEvent.idEvento,
-            message: "Event created successfully."
+            message: "Event created successfully.",
+            event: newEvent 
         });
 
     } catch (error) {
+        console.error('Outer catch block in createEvent:', error);
+        // Rollback Cloudinary upload if an image was uploaded and a subsequent error occurred
+        if (tempImagePublicId) {
+            try {
+                console.log(`Attempting to delete image ${tempImagePublicId} from Cloudinary due to error.`);
+                await cloudinary.uploader.destroy(tempImagePublicId);
+                console.log(`Successfully deleted image ${tempImagePublicId} from Cloudinary.`);
+            } catch (deleteError) {
+                console.error(`Failed to delete image ${tempImagePublicId} from Cloudinary after error:`, deleteError);
+            }
+        }
+
         if (error instanceof ErrorHandler) return next(error);
         if (error.name === 'SequelizeValidationError') {
             return next(new ErrorHandler(400, error.errors.map(e => e.message).join(', ')));
         }
-        console.error('Error in createEvent:', error);
-        next(new ErrorHandler(500, 'Internal Server Error, try again!'));
+        console.error('Unhandled error in createEvent controller (final catch):', error.name, error.message, error.stack);
+        next(new ErrorHandler(500, 'Internal Server Error, please try again!'));
     }
 };
 
@@ -475,53 +534,43 @@ exports.patchEvent = async (req, res, next) => {
             return next(new ErrorHandler(403, 'Only the event creator or an administrator can modify this event.'));
         }
 
-        // 12 horas
+        // 12-hour rule check
         const eventStartDateTime = new Date(`${event.data}T${event.hora}`);
         const twelveHoursInMs = 12 * 60 * 60 * 1000;
         if (eventStartDateTime.getTime() - Date.now() < twelveHoursInMs && req.user.role !== 'Administrador') {
-             return next(new ErrorHandler(403, 'Events cannot be modified less than 12 hours before start time by non-admins.'));
+            return next(new ErrorHandler(403, 'Events cannot be modified less than 12 hours before start time by non-admins.'));
         }
 
         const updateData = {};
-        const allowedFields = ['title', 'image', 'description', 'eventType', 'eventDate', 'eventTime', 'location', 'maxParticipants', 'isPublic', 'linksRelevantes'];
         let changesMade = false;
 
-        for (const key in req.body) {
-            if (allowedFields.includes(key)) {
-                updateData[key] = req.body[key];
+        const fieldMapping = {
+            'title': 'titulo',
+            'description': 'descricao',
+            'eventType': 'tipoEvento',
+            'location': 'localizacao',
+            'maxParticipants': 'maxParticipantes',
+            'isPublic': 'isPublic',
+            'linksRelevantes': 'linksRelevantes'
+        };
+
+        for (const [frontendField, value] of Object.entries(req.body)) {
+            // Skip eventDate e eventTime
+            if (frontendField === 'eventDate' || frontendField === 'eventTime') {
+                continue;
+            }
+            
+            if (fieldMapping[frontendField]) {
+                updateData[fieldMapping[frontendField]] = value;
                 changesMade = true;
             }
         }
 
-        if (!changesMade) {
-            return next(new ErrorHandler(400, 'No valid fields provided for update.'));
-        }
+        // separa eventDate e eventTime
+        const newEventDate = req.body.eventDate || event.data;
+        const newEventTime = req.body.eventTime || event.hora;
 
-        if (updateData.title !== undefined) {
-            if (!updateData.title) throw new ErrorHandler(400, 'The TITLE field cannot be empty.');
-            if (updateData.title.length < 5 || updateData.title.length > 255) {
-                throw new ErrorHandler(400, 'The TITLE field must be between 5 to 255 characters.');
-            }
-        }
-        if (updateData.maxParticipants !== undefined) {
-            const mp = parseInt(updateData.maxParticipants, 10);
-            if (isNaN(mp) || mp <= 1) {
-                throw new ErrorHandler(400, 'The MAX PARTICIPANTS must be greater than 1.');
-            }
-            // Novo MAX PARTICIPANTS deve ser >= ao anterior.
-            if (req.user.role !== 'Administrador' && mp < event.maxParticipantes) {
-                 throw new ErrorHandler(400, 'The new MAX PARTICIPANTS value must be greater than or equal to the previous one.');
-            }
-            updateData.maxParticipants = mp;
-        }
-        if (updateData.isPublic !== undefined && typeof updateData.isPublic !== 'boolean') {
-            throw new ErrorHandler(400, 'The isPublic field must be a boolean.');
-        }
-
-        const newEventDate = updateData.eventDate || event.data;
-        const newEventTime = updateData.eventTime || event.hora;
-
-        if (updateData.eventDate || updateData.eventTime) {
+        if (req.body.eventDate || req.body.eventTime) {
             const newEventDateTime = new Date(`${newEventDate}T${newEventTime}`);
             if (isNaN(newEventDateTime.getTime())) {
                 throw new ErrorHandler(400, 'Invalid DATE or TIME format provided for update.');
@@ -531,10 +580,36 @@ exports.patchEvent = async (req, res, next) => {
             }
             updateData.data = newEventDate;
             updateData.hora = newEventTime;
-            delete updateData.eventDate;
-            delete updateData.eventTime;
+            changesMade = true;
         }
 
+        if (updateData.titulo !== undefined) {
+            if (!updateData.titulo) throw new ErrorHandler(400, 'The TITLE field cannot be empty.');
+            if (updateData.titulo.length < 5 || updateData.titulo.length > 255) {
+                throw new ErrorHandler(400, 'The TITLE field must be between 5 to 255 characters.');
+            }
+        }
+
+        if (updateData.maxParticipantes !== undefined) {
+            const mp = parseInt(updateData.maxParticipantes, 10);
+            if (isNaN(mp) || mp <= 1) {
+                throw new ErrorHandler(400, 'The MAX PARTICIPANTS must be greater than 1.');
+            }
+            if (req.user.role !== 'Administrador' && mp < event.maxParticipantes) {
+                throw new ErrorHandler(400, 'The new MAX PARTICIPANTS value must be greater than or equal to the previous one for non-admins.');
+            }
+            updateData.maxParticipantes = mp;
+        }
+
+        if (updateData.isPublic !== undefined && typeof updateData.isPublic !== 'boolean') {
+            throw new ErrorHandler(400, 'The isPublic field must be a boolean.');
+        }
+
+        if (!changesMade) {
+            return next(new ErrorHandler(400, 'No valid fields provided for update.'));
+        }
+
+        // update
         await event.update(updateData);
         const updatedEvent = await Event.findByPk(eventId);
 

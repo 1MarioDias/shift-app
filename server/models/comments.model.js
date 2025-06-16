@@ -11,7 +11,16 @@ const Comment = db.sequelize.define('comentarios', {
     },
     conteudo: {
         type: DataTypes.TEXT,
-        allowNull: false
+        allowNull: false,
+        validate: {
+            notEmpty: {
+                msg: "Comment text cannot be empty."
+            },
+            len: {
+                args: [1, 1000],
+                msg: "Comment text must be between 1 and 1000 characters."
+            }
+        }
     },
     dataComentario: {
         type: DataTypes.DATE,
@@ -24,7 +33,8 @@ const Comment = db.sequelize.define('comentarios', {
         references: {
             model: User,
             key: 'idUtilizador'
-        }
+        },
+        onDelete: 'CASCADE'
     },
     idEvento: {
         type: DataTypes.INTEGER,
@@ -32,13 +42,15 @@ const Comment = db.sequelize.define('comentarios', {
         references: {
             model: Event,
             key: 'idEvento'
-        }
+        },
+        onDelete: 'CASCADE'
     }
 }, {
     timestamps: false,
     tableName: 'comentarios'
 });
 
+// Associations
 User.hasMany(Comment, { foreignKey: 'idUtilizador', as: 'commentsMade' });
 Comment.belongsTo(User, { foreignKey: 'idUtilizador', as: 'commenter' });
 
