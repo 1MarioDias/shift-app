@@ -3,6 +3,7 @@ const User = require('../models/users.model');
 const { Op } = require('sequelize');
 const { ErrorHandler } = require('../utils/error');
 const cloudinary = require('../config/cloudinaryConfig');
+const { notifyEventUpdate } = require('./notifications.controller');
 
 // Helper da paginação e response links
 const buildEventResponse = (req, pageNum, pageSizeNum, count, formattedEvents, queryParamsForLinks = {}) => {
@@ -501,6 +502,8 @@ exports.updateEvent = async (req, res, next) => {
             linksRelevantes
         });
 
+        await notifyEventUpdate(event.idEvento, event.titulo);
+
         res.status(200).json({
             eventId: event.idEvento,
             message: "Event updated successfully."
@@ -612,6 +615,10 @@ exports.patchEvent = async (req, res, next) => {
         // update
         await event.update(updateData);
         const updatedEvent = await Event.findByPk(eventId);
+
+        if (Object.keys(updateData).length > 0) {
+            await notifyEventUpdate(updatedEvent.idEvento, updatedEvent.titulo);
+        }
 
         res.status(200).json({
             eventId: updatedEvent.idEvento,
