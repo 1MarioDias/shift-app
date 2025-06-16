@@ -1,54 +1,74 @@
 const { Op, Transaction } = require('sequelize');
-const db = require('../models/db'); // For transactions
+const db = require('../models/db');
 const Event = require('../models/events.model');
 const User = require('../models/users.model');
 const EventParticipant = require('../models/eventParticipants.model');
 const WaitingList = require('../models/waitingList.model');
 const { ErrorHandler } = require('../utils/error');
+const { createNotification } = require('./notifications.controller');
+const NOTIFICATION_TYPES = {
+    EVENT_REGISTRATION_CONFIRMED: 'EVENT_REGISTRATION_CONFIRMED',
+    EVENT_WAITING_LIST_ADDED: 'EVENT_WAITING_LIST_ADDED',
+    EVENT_PROMOTED_FROM_WAITING_LIST: 'EVENT_PROMOTED_FROM_WAITING_LIST'
+};
 
 // passar da waitilingList para a lista de participantes confirmados
 async function promoteFromWaitingList(eventId, transaction) {
     const event = await Event.findByPk(eventId, { transaction });
     if (!event) {
-        console.log(`Event ${eventId} not found, cannot promote.`);
+        console.log(`Event ${eventId} not found, cannot promote from waiting list.`);
         return null;
     }
 
+    // evento c capacidade ilimitada
     if (event.maxParticipantes === null) {
         const usersOnWaitingList = await WaitingList.findAll({
             where: { idEvento: eventId },
             order: [['dataInscricao', 'ASC']],
+            include: [{ model: User, as: 'user', attributes: ['idUtilizador'] }],
             transaction
         });
 
-        let promotedCount = 0;
-        for (const userToPromote of usersOnWaitingList) {
-            // confirma se o utilizador já não é um participante confirmado
+        let promotedUserIds = [];
+        for (const waitingUser of usersOnWaitingList) {
+            const userToPromoteId = waitingUser.idUtilizador;
+
             const alreadyParticipant = await EventParticipant.findOne({
-                where: { idEvento: eventId, idUtilizador: userToPromote.idUtilizador, status: 'confirmado' },
+                where: { idEvento: eventId, idUtilizador: userToPromoteId, status: 'confirmado' },
                 transaction
             });
+
             if (!alreadyParticipant) {
                 await EventParticipant.create({
                     idEvento: eventId,
-                    idUtilizador: userToPromote.idUtilizador,
+                    idUtilizador: userToPromoteId,
                     status: 'confirmado',
+                    dataInscricao: new Date()
                 }, { transaction });
-                promotedCount++;
+
+                // criar notificação
+                const eventForNotification = await Event.findByPk(eventId, { attributes: ['titulo'], transaction });
+                if (eventForNotification) {
+                    await createNotification(
+                        userToPromoteId,
+                        NOTIFICATION_TYPES.EVENT_PROMOTED_FROM_WAITING_LIST,
+                        `Good news! You've been promoted from the waiting list and are now registered for the event: '${eventForNotification.titulo}'.`,
+                        eventId,
+                        transaction
+                    );
+                }
+                promotedUserIds.push(userToPromoteId);
+                console.log(`User ${userToPromoteId} promoted from waiting list for event ${eventId} (unlimited capacity).`);
             }
+            // remove da lista de espera
             await WaitingList.destroy({
-                where: {
-                    idEvento: eventId,
-                    idUtilizador: userToPromote.idUtilizador
-                },
+                where: { idEvento: eventId, idUtilizador: userToPromoteId },
                 transaction
             });
         }
-        if (promotedCount > 0) {
-            console.log(`${promotedCount} user(s) promoted from waiting list for event ${eventId} due to unlimited capacity.`);
-        }
-        return promotedCount > 0 ? usersOnWaitingList.map(u => u.idUtilizador) : null;
+        return promotedUserIds.length > 0 ? promotedUserIds : null;
 
+    // evento com capacidade limitada
     } else if (typeof event.maxParticipantes === 'number') {
         const currentParticipantCount = await EventParticipant.count({
             where: { idEvento: eventId, status: 'confirmado' },
@@ -56,48 +76,68 @@ async function promoteFromWaitingList(eventId, transaction) {
         });
 
         if (currentParticipantCount < event.maxParticipantes) {
-            const userToPromote = await WaitingList.findOne({
+            const userToPromoteFromWaitingList = await WaitingList.findOne({
                 where: { idEvento: eventId },
                 order: [['dataInscricao', 'ASC']],
+                include: [{ model: User, as: 'user', attributes: ['idUtilizador'] }],
                 transaction
             });
 
-            if (userToPromote) {
-                 // confirma se o utilizador já não é um participante confirmado
+            if (userToPromoteFromWaitingList) {
+                const userToPromoteId = userToPromoteFromWaitingList.idUtilizador;
+
                 const alreadyParticipant = await EventParticipant.findOne({
-                    where: { idEvento: eventId, idUtilizador: userToPromote.idUtilizador, status: 'confirmado' },
+                    where: { idEvento: eventId, idUtilizador: userToPromoteId, status: 'confirmado' },
                     transaction
                 });
+
                 if (alreadyParticipant) {
-                    // se for: apaga da waiting list na mesma
-                     await WaitingList.destroy({
-                        where: { idEvento: eventId, idUtilizador: userToPromote.idUtilizador },
+                    // limpa da lista de espera
+                    await WaitingList.destroy({
+                        where: { idEvento: eventId, idUtilizador: userToPromoteId },
                         transaction
                     });
-                    console.log(`User ${userToPromote.idUtilizador} was already a participant for event ${eventId}, removed from waiting list.`);
+                    console.log(`User ${userToPromoteId} was already a confirmed participant for event ${eventId}. Removed from waiting list only.`);
                     return null;
                 }
 
+                // promove o utilizador da lista de espera para a tabela de participantes confirmados
                 await EventParticipant.create({
                     idEvento: eventId,
-                    idUtilizador: userToPromote.idUtilizador,
+                    idUtilizador: userToPromoteId,
                     status: 'confirmado',
+                    dataInscricao: new Date()
                 }, { transaction });
 
+                // remove da lista de espera
                 await WaitingList.destroy({
-                    where: {
-                        idEvento: eventId,
-                        idUtilizador: userToPromote.idUtilizador
-                    },
+                    where: { idEvento: eventId, idUtilizador: userToPromoteId },
                     transaction
                 });
-                console.log(`User ${userToPromote.idUtilizador} promoted from waiting list for event ${eventId}.`);
-                return [userToPromote.idUtilizador];
+
+                // cria a notificação
+                const eventForNotification = await Event.findByPk(eventId, { attributes: ['titulo'], transaction });
+                if (eventForNotification) {
+                    await createNotification(
+                        userToPromoteId,
+                        NOTIFICATION_TYPES.EVENT_PROMOTED_FROM_WAITING_LIST,
+                        `Good news! You've been promoted from the waiting list and are now registered for the event: '${eventForNotification.titulo}'.`,
+                        eventId,
+                        transaction
+                    );
+                }
+                console.log(`User ${userToPromoteId} promoted from waiting list for event ${eventId}. Notification should have been created.`);
+                return [userToPromoteId];
+            } else {
+                console.log(`No users on waiting list to promote for event ${eventId}.`);
+                return null;
             }
+        } else {
+            console.log(`Event ${eventId} is still full or no capacity to promote (Current: ${currentParticipantCount}, Max: ${event.maxParticipantes}).`);
+            return null;
         }
-    } else {
-        console.log(`Event ${eventId} maxParticipants is not set or invalid, cannot promote.`);
     }
+    console.log(`Event ${eventId} maxParticipants is not set to null or a number, cannot promote.`);
     return null;
 }
 
@@ -146,11 +186,21 @@ exports.registerForEvent = async (req, res, next) => {
 
         // evento ilimitado
         if (event.maxParticipantes === null) {
-            const newParticipant = await EventParticipant.create({
+            await EventParticipant.create({
                 idEvento: eventId,
                 idUtilizador: userId,
-                status: 'confirmado'
+                status: 'confirmado',
+                dataInscricao: new Date()
             }, { transaction });
+
+            // Cria notificação DENTRO da transação
+            await createNotification(
+                userId,
+                NOTIFICATION_TYPES.EVENT_REGISTRATION_CONFIRMED,
+                `You have successfully registered for the event: '${event.titulo}'.`,
+                eventId,
+                transaction
+            );
 
             await transaction.commit();
             return res.status(201).json({
@@ -175,8 +225,17 @@ exports.registerForEvent = async (req, res, next) => {
                 const newParticipant = await EventParticipant.create({
                     idEvento: eventId,
                     idUtilizador: userId,
-                    status: 'confirmado'
+                    status: 'confirmado',
+                    dataInscricao: new Date()
                 }, { transaction });
+
+                await createNotification(
+                    userId,
+                    NOTIFICATION_TYPES.EVENT_REGISTRATION_CONFIRMED,
+                    `You have successfully registered for the event: '${event.titulo}'.`,
+                    eventId,
+                    transaction
+                );
 
                 await transaction.commit();
                 return res.status(201).json({
@@ -192,8 +251,17 @@ exports.registerForEvent = async (req, res, next) => {
                 // cheio: add na waiting list
                 const newWaitingListEntry = await WaitingList.create({
                     idEvento: eventId,
-                    idUtilizador: userId
+                    idUtilizador: userId,
+                    dataInscricao: new Date()
                 }, { transaction });
+
+                await createNotification(
+                    userId,
+                    NOTIFICATION_TYPES.EVENT_WAITING_LIST_ADDED,
+                    `The event '${event.titulo}' is full. You've been added to the waiting list.`,
+                    eventId,
+                    transaction
+                );
 
                 await transaction.commit();
                 return res.status(200).json({ // 200 na waiting list
