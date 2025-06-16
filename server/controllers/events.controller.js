@@ -293,11 +293,11 @@ exports.getEventById = async (req, res, next) => {
 
 // POST /events
 exports.createEvent = async (req, res, next) => {
-    let tempImagePublicId = null; // For Cloudinary rollback
+    let tempImagePublicId = null;
 
-    console.log('--- Create Event ---'); // For easier log tracking
-    console.log('req.file:', req.file); // DEBUG: Check if file is present
-    console.log('req.body:', req.body); // DEBUG: Check text fields
+    console.log('--- Create Event ---');
+    console.log('req.file:', req.file); // DEBUG
+    console.log('req.body:', req.body); // DEBUG
 
     try {
         const {
@@ -307,9 +307,7 @@ exports.createEvent = async (req, res, next) => {
 
         const idAutor = req.user.userId;
 
-        // --- Validations (as previously discussed, ensure they are robust) ---
         if (!title) throw new ErrorHandler(400, 'The TITLE field cannot be empty.');
-        // ... other validations for title length, eventType, eventDate, eventTime, location ...
 
         let mp = null;
         if (maxParticipants !== undefined && maxParticipants !== null && maxParticipants !== '') {
@@ -346,7 +344,6 @@ exports.createEvent = async (req, res, next) => {
         if (req.file) {
             console.log('req.file is PRESENT. Attempting Cloudinary upload.'); // DEBUG
             if (!req.file.buffer) {
-                // This should ideally not happen with memoryStorage if req.file exists
                 console.error('Error: req.file exists but req.file.buffer is missing.');
                 return next(new ErrorHandler(500, 'File buffer is missing after upload.'));
             }
@@ -355,7 +352,7 @@ exports.createEvent = async (req, res, next) => {
                     const uploadStream = cloudinary.uploader.upload_stream(
                         {
                             resource_type: 'image',
-                            folder: 'shift-app/events', // Your desired folder in Cloudinary
+                            folder: 'shift-app/events',
                         },
                         (error, result) => {
                             if (error) {
@@ -377,19 +374,18 @@ exports.createEvent = async (req, res, next) => {
                 console.log('Cloudinary upload successful. Image URL:', imageUrl); // DEBUG
             } catch (uploadError) {
                 console.error('Catch block for Cloudinary upload error:', uploadError); // DEBUG
-                // Ensure the error is an instance of ErrorHandler or wrap it
                 const errorToPass = uploadError instanceof ErrorHandler ? uploadError : new ErrorHandler(500, `Image upload processing error: ${uploadError.message}`);
                 return next(errorToPass);
             }
         } else {
             console.log('req.file is ABSENT. Using default hardcoded image.'); // DEBUG
-            imageUrl = 'https://res.cloudinary.com/dbbypewvv/image/upload/v1749942289/cardImage_joengm.png'; // Your hardcoded default
+            imageUrl = 'https://res.cloudinary.com/dbbypewvv/image/upload/v1749942289/cardImage_joengm.png';
         }
 
         const newEvent = await Event.create({
             idAutor,
             titulo: title,
-            imagem: imageUrl, // This will be the Cloudinary URL or null
+            imagem: imageUrl,
             descricao: description,
             tipoEvento: eventType,
             data: eventDate,
@@ -404,7 +400,7 @@ exports.createEvent = async (req, res, next) => {
         res.status(201).json({
             eventId: newEvent.idEvento,
             message: "Event created successfully.",
-            event: newEvent // Optionally return the full event
+            event: newEvent 
         });
 
     } catch (error) {
@@ -417,11 +413,9 @@ exports.createEvent = async (req, res, next) => {
                 console.log(`Successfully deleted image ${tempImagePublicId} from Cloudinary.`);
             } catch (deleteError) {
                 console.error(`Failed to delete image ${tempImagePublicId} from Cloudinary after error:`, deleteError);
-                // Log this error but don't overshadow the original error sent to the client
             }
         }
 
-        // Pass the original error to the global error handler
         if (error instanceof ErrorHandler) return next(error);
         if (error.name === 'SequelizeValidationError') {
             return next(new ErrorHandler(400, error.errors.map(e => e.message).join(', ')));
@@ -547,37 +541,32 @@ exports.patchEvent = async (req, res, next) => {
             return next(new ErrorHandler(403, 'Events cannot be modified less than 12 hours before start time by non-admins.'));
         }
 
-        // Create a fresh object for database update with the correct field names
         const updateData = {};
         let changesMade = false;
 
-        // Map frontend field names to database model field names
         const fieldMapping = {
             'title': 'titulo',
             'description': 'descricao',
             'eventType': 'tipoEvento',
             'location': 'localizacao',
             'maxParticipants': 'maxParticipantes',
-            // These fields don't need mapping (same name)
             'isPublic': 'isPublic',
             'linksRelevantes': 'linksRelevantes'
         };
 
-        // Process each field from the request body
         for (const [frontendField, value] of Object.entries(req.body)) {
-            // Skip eventDate and eventTime as they're handled separately
+            // Skip eventDate e eventTime
             if (frontendField === 'eventDate' || frontendField === 'eventTime') {
                 continue;
             }
             
-            // If this field has a mapping, use it
             if (fieldMapping[frontendField]) {
                 updateData[fieldMapping[frontendField]] = value;
                 changesMade = true;
             }
         }
 
-        // Handle date and time specially as before
+        // separa eventDate e eventTime
         const newEventDate = req.body.eventDate || event.data;
         const newEventTime = req.body.eventTime || event.hora;
 
@@ -594,7 +583,6 @@ exports.patchEvent = async (req, res, next) => {
             changesMade = true;
         }
 
-        // Handle validations for fields
         if (updateData.titulo !== undefined) {
             if (!updateData.titulo) throw new ErrorHandler(400, 'The TITLE field cannot be empty.');
             if (updateData.titulo.length < 5 || updateData.titulo.length > 255) {
@@ -610,7 +598,7 @@ exports.patchEvent = async (req, res, next) => {
             if (req.user.role !== 'Administrador' && mp < event.maxParticipantes) {
                 throw new ErrorHandler(400, 'The new MAX PARTICIPANTS value must be greater than or equal to the previous one for non-admins.');
             }
-            updateData.maxParticipantes = mp;  // Ensure it's a number
+            updateData.maxParticipantes = mp;
         }
 
         if (updateData.isPublic !== undefined && typeof updateData.isPublic !== 'boolean') {
@@ -621,7 +609,7 @@ exports.patchEvent = async (req, res, next) => {
             return next(new ErrorHandler(400, 'No valid fields provided for update.'));
         }
 
-        // Do the actual update with properly mapped fields
+        // update
         await event.update(updateData);
         const updatedEvent = await Event.findByPk(eventId);
 

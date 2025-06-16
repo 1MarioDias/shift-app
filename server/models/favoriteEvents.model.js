@@ -31,7 +31,7 @@ const FavoriteEvent = db.sequelize.define('eventosfavoritos', {
     }
 }, {
     tableName: 'eventosfavoritos',
-    timestamps: false // No `createdAt` or `updatedAt` as `dataFavorito` serves this purpose
+    timestamps: false
 });
 
 // Define associations
@@ -39,17 +39,16 @@ User.belongsToMany(Event, {
     through: FavoriteEvent,
     foreignKey: 'idUtilizador',
     otherKey: 'idEvento',
-    as: 'favoriteEvents' // User.getFavoriteEvents()
+    as: 'favoriteEvents'
 });
 
 Event.belongsToMany(User, {
     through: FavoriteEvent,
     foreignKey: 'idEvento',
     otherKey: 'idUtilizador',
-    as: 'favoritedByUsers' // Event.getFavoritedByUsers()
+    as: 'favoritedByUsers'
 });
 
-// Also, direct associations to the join table model itself can be useful
 FavoriteEvent.belongsTo(User, { foreignKey: 'idUtilizador', as: 'user' });
 FavoriteEvent.belongsTo(Event, { foreignKey: 'idEvento', as: 'event' });
 

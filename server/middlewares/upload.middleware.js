@@ -12,16 +12,15 @@ const fileFilter = (req, file, cb) => {
     const mimetypeValid = allowedMimetypes.test(file.mimetype);
 
     if (mimetypeValid && extnameValid) {
-        cb(null, true); // Accept file
+        cb(null, true);
     } else {
-        // Reject file and pass an error that Multer should forward to Express's error handler
         cb(new ErrorHandler(400, 'Upload failed. Invalid file type. Only JPEG, JPG, PNG, GIF image types are allowed.'));
     }
 };
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: fileFilter
 });
 

@@ -3,7 +3,7 @@ const { ErrorHandler } = require('../utils/error');
 const Event = require('../models/events.model');
 const User = require('../models/users.model');
 const FavoriteEvent = require('../models/favoriteEvents.model');
-const { buildEventResponse } = require('./events.controller'); // Re-use helper if suitable or adapt
+const { buildEventResponse } = require('./events.controller');
 
 // GET /favorites - Lista os Eventos Favoritos do Utilizador Autenticado
 exports.listFavoriteEvents = async (req, res, next) => {
@@ -23,28 +23,24 @@ exports.listFavoriteEvents = async (req, res, next) => {
                 as: 'favoriteEvents',
                 attributes: ['idEvento', 'titulo', 'descricao', 'data', 'hora', 'localizacao', 'tipoEvento', 'imagem'],
                 through: {
-                    attributes: ['dataFavorito'], // Include when it was favorited
+                    attributes: ['dataFavorito'],
                     as: 'favoritedDetails'
                 },
-                // Apply pagination to the included 'favoriteEvents'
-                // This is a bit tricky with Sequelize's belongsToMany for direct pagination on the related model.
-                // A more robust way for pagination is to query FavoriteEvent table directly.
             }],
         });
 
         if (!userWithFavorites) {
-            // Should not happen if requireAuth is working
+            // meio desnecessário visto que passa pela auth
             return next(new ErrorHandler(404, 'User not found.'));
         }
 
-        // Alternative and often better for pagination: Query FavoriteEvent directly
         const { count, rows } = await FavoriteEvent.findAndCountAll({
             where: { idUtilizador: userId },
             include: [{
                 model: Event,
                 as: 'event',
                 attributes: ['idEvento', 'titulo', 'descricao', 'data', 'hora', 'localizacao', 'tipoEvento', 'imagem', 'isPublic'],
-                include: [{ // Include organizer for authorName
+                include: [{
                     model: User,
                     as: 'organizer',
                     attributes: ['nome']
@@ -52,13 +48,13 @@ exports.listFavoriteEvents = async (req, res, next) => {
             }],
             limit: pageSizeNum,
             offset: pageNum * pageSizeNum,
-            order: [['dataFavorito', 'DESC']] // Order by when it was favorited
+            order: [['dataFavorito', 'DESC']]
         });
 
         const formattedEvents = rows.map(fav => ({
             eventId: fav.event.idEvento,
             title: fav.event.titulo,
-            image: fav.event.imagem, // Ensure this is the full Cloudinary URL
+            image: fav.event.imageUrl,
             description: fav.event.descricao,
             date: fav.event.data,
             time: fav.event.hora,
@@ -80,7 +76,6 @@ exports.listFavoriteEvents = async (req, res, next) => {
         if (pageNum > 0) {
             responseLinks.push({ rel: "prev-page", href: `${basePath}?pageSize=${pageSizeNum}&page=${pageNum - 1}`, method: "GET" });
         }
-        // Add a link to allow adding events (conceptually, points to general event creation)
         responseLinks.push({ rel: "add-event", href: "/events", method: "POST" });
 
 
@@ -127,10 +122,9 @@ exports.addEventToFavorites = async (req, res, next) => {
         const newFavorite = await FavoriteEvent.create({
             idUtilizador: userId,
             idEvento: eventId
-            // dataFavorito will use defaultValue
         });
 
-        res.status(200).json({ // As per your spec, 200 OK for adding
+        res.status(200).json({
             message: "Event added to favorites successfully.",
             favorite: {
                 userId: newFavorite.idUtilizador,

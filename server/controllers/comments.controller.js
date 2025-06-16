@@ -1,7 +1,6 @@
 const Comment = require('../models/comments.model');
 const User = require('../models/users.model');
 const Event = require('../models/events.model');
-// const EventParticipant = require('../models/eventParticipants.model'); // Assuming you have this model
 const { Op } = require('sequelize');
 const { ErrorHandler } = require('../utils/error');
 
@@ -16,7 +15,7 @@ const formatCommentResponse = (comment) => {
             userName: comment.commenter.nome
         } : null,
         eventId: comment.idEvento,
-        eventTitle: comment.commentedEvent ? comment.commentedEvent.titulo : null // If event details are included
+        eventTitle: comment.commentedEvent ? comment.commentedEvent.titulo : null
     };
 };
 
@@ -41,12 +40,12 @@ exports.getCommentsForEvent = async (req, res, next) => {
             return next(new ErrorHandler(404, `Event with ID ${eventId} not found.`));
         }
 
-        // Authorization for private events
+        // authh
         if (!event.isPublic) {
-            if (!req.user) { // authenticate middleware should run before this
+            if (!req.user) {
                 return next(new ErrorHandler(401, 'Authentication required to view comments for this private event.'));
             }
-            // Allow if user is organizer or admin
+            // deixa se o utilizador é o autor do evento ou é um administrador
             if (event.idAutor !== req.user.userId && req.user.role !== 'Administrador') {
                 return next(new ErrorHandler(403, 'You do not have permission to view comments for this private event.'));
             }
@@ -75,7 +74,7 @@ exports.getCommentsForEvent = async (req, res, next) => {
         if (pageNum > 0) {
             responseLinks.push({ rel: "prev-page", href: `${basePath}?pageSize=${pageSizeNum}&page=${pageNum - 1}`, method: "GET" });
         }
-        if (req.user) { // Only show add-comment link if user is authenticated
+        if (req.user) {
              responseLinks.push({ rel: "add-comment", href: `/events/${eventId}/comments`, method: "POST" });
         }
 
@@ -101,7 +100,7 @@ exports.getCommentsForEvent = async (req, res, next) => {
 exports.addCommentToEvent = async (req, res, next) => {
     try {
         const eventId = parseInt(req.params.eventId, 10);
-        const userId = req.user.userId; // From requireAuth middleware
+        const userId = req.user.userId;
         const { text } = req.body;
 
         if (isNaN(eventId)) {
@@ -116,13 +115,6 @@ exports.addCommentToEvent = async (req, res, next) => {
             return next(new ErrorHandler(404, `Event with ID ${eventId} not found.`));
         }
 
-        // Optional: Check if user participated in the event to comment
-        // This requires an EventParticipant model and table.
-        // const participant = await EventParticipant.findOne({ where: { idEvento: eventId, idUtilizador: userId, status: 'confirmado' } });
-        // if (!participant && event.idAutor !== userId && req.user.role !== 'Administrador') { // Allow organizer and admin to comment regardless
-        //     return next(new ErrorHandler(403, 'You must participate in the event to comment.'));
-        // }
-
 
         const newComment = await Comment.create({
             conteudo: text.trim(),
@@ -130,7 +122,6 @@ exports.addCommentToEvent = async (req, res, next) => {
             idEvento: eventId
         });
 
-        // Fetch the commenter details for the response
         const commenter = await User.findByPk(userId, { attributes: ['idUtilizador', 'nome'] });
 
         res.status(201).json({
@@ -159,8 +150,8 @@ exports.getAllComments = async (req, res, next) => {
             pageSize = 10,
             sortBy = 'dataComentario',
             order = 'desc',
-            userId, // Filter by userId
-            eventId // Filter by eventId
+            userId, // filtros
+            eventId
         } = req.query;
 
         const pageNum = parseInt(page, 10);
@@ -204,7 +195,7 @@ exports.getAllComments = async (req, res, next) => {
             limit: pageSizeNum,
             offset: pageNum * pageSizeNum,
             order: [[sortBy, order.toUpperCase()]],
-            distinct: true // Important for counts with includes
+            distinct: true
         });
 
         const formattedComments = rows.map(formatCommentResponse);
@@ -262,8 +253,8 @@ exports.deleteCommentByAdmin = async (req, res, next) => {
 exports.deleteComment = async (req, res, next) => {
     try {
         const commentId = parseInt(req.params.commentId, 10);
-        const userId = req.user.userId; // From requireAuth
-        const userRole = req.user.role; // From authenticate middleware
+        const userId = req.user.userId;
+        const userRole = req.user.role;
 
         if (isNaN(commentId)) {
             return next(new ErrorHandler(400, 'Invalid comment ID.'));
@@ -280,14 +271,6 @@ exports.deleteComment = async (req, res, next) => {
         if (!isOwner && !isAdmin) {
             return next(new ErrorHandler(403, 'You are not authorized to delete this comment.'));
         }
-
-        // Optional: Time limit for non-admins deleting their own comment
-        // if (isOwner && !isAdmin) {
-        //     const oneHourInMs = 60 * 60 * 1000;
-        //     if (Date.now() - new Date(comment.dataComentario).getTime() > oneHourInMs) {
-        //         return next(new ErrorHandler(403, 'You can only delete your own comment within one hour of posting. Admins can delete anytime.'));
-        //     }
-        // }
 
         await comment.destroy();
         res.status(204).send();

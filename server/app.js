@@ -30,7 +30,7 @@ app.use((req, res, next) => {
 app.use('/events', require('./routes/events.routes.js'));
 app.use('/users', require('./routes/users.routes.js'));
 const { generalCommentsRouter } = require('./routes/comments.routes.js');
-app.use('/comments', generalCommentsRouter); // Mounts admin and user's own delete routes
+app.use('/comments', generalCommentsRouter);
 app.use('/favorites', require('./routes/favorites.routes.js'));
 
 app.use((req, res, next) => {
