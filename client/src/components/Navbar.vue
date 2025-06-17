@@ -1,7 +1,5 @@
 <template>
-  <nav
-    class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-16 py-6 max-md:px-8 max-sm:px-5"
-  >
+  <nav class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-16 py-6 max-md:px-8 max-sm:px-5">
     <!-- Logo -->
     <div class="logo transition duration-300">
       <RouterLink to="/" class="group block w-[105px] h-[40px]">
@@ -18,17 +16,27 @@
 
     <!-- SearchBar -->
     <div class="flex flex-1 justify-center max-md:hidden">
-      <SearchBar class="rounded-full px-4 py-2 w-full max-w-xl focus:">
+      <SearchBar
+        v-model="searchText"
+        class="rounded-full px-4 py-2 w-full max-w-xl"
+      >
         <template #prepend>
-              <RouterLink to="/search">
-                <div v-html="searchIcon" class="mr-2 cursor-pointer [&_svg]:stroke-[#FAF9F6] [&_svg]:fill-none"></div>
-              </RouterLink>
+          <div
+            @click="goToSearch"
+            v-html="searchIcon"
+            class="mr-2 cursor-pointer [&_svg]:stroke-[#FAF9F6] [&_svg]:fill-none"
+          ></div>
         </template>
         <template #append>
           <div class="mx-5 w-0.5 bg-stone-50 h-[27px]"></div>
           <div class="flex gap-2.5 items-center">
             <div v-html="locationIcon"></div>
-            <span class="text-xs text-stone-50">Porto</span>
+            <button
+              @click="goToSearch(userCity)"
+              class="text-xs text-stone-50 hover:underline focus:outline-none"
+            >
+              {{ userCity }}
+            </button>
           </div>
         </template>
       </SearchBar>
@@ -36,38 +44,35 @@
 
     <!-- Botões -->
     <div class="flex gap-5 items-center">
-      <!-- Authenticated User Buttons -->
       <template v-if="isUserLoggedIn">
-        <!-- Ícone do utilizador -->
         <div class="relative">
-          <button 
-            @click="toggleProfileDropdown" 
+          <button
+            @click="toggleProfileDropdown"
             class="w-12 h-12 rounded-full overflow-hidden border-2 border-white cursor-pointer"
           >
             <img :src="profileImage" alt="User" class="w-full h-full object-cover" />
           </button>
-          
-          <!-- Dropdown Menu -->
-          <div 
-            v-show="showProfileDropdown" 
+
+          <div
+            v-show="showProfileDropdown"
             class="absolute right-0 mt-2 py-2 w-48 bg-white bg-opacity-10 backdrop-blur-md rounded-xl shadow-lg z-50 border border-white border-opacity-20"
           >
-            <RouterLink 
-              to="/user" 
+            <RouterLink
+              to="/user"
               class="block px-4 py-2 text-sm text-black hover:bg-white hover:bg-opacity-10 transition-colors"
               @click="showProfileDropdown = false"
             >
               My Profile
             </RouterLink>
-            <button 
-              @click="handleLogout" 
+            <button
+              @click="handleLogout"
               class="block w-full text-left px-4 py-2 text-sm text-#ff0000 hover:bg-white hover:bg-opacity-10 transition-colors"
             >
               Logout
             </button>
           </div>
         </div>
-        <!-- Botão Create Event -->
+
         <RouterLink to="/create">
           <button
             class="flex items-center justify-center gap-2 px-5 py-2 rounded-2xl bg-[#FAF9F6] text-black transition duration-300 hover:bg-[#426CFF] hover:text-white cursor-pointer"
@@ -76,7 +81,7 @@
           </button>
         </RouterLink>
       </template>
-      <!-- Login Button for Unauthenticated Users -->
+
       <template v-else>
         <RouterLink to="/login">
           <button
@@ -88,20 +93,17 @@
       </template>
     </div>
   </nav>
-
 </template>
-
 
 <script>
 import { RouterLink, RouterView } from 'vue-router';
-import SearchBar from "./SearchBar.vue";
+import SearchBar from './SearchBar.vue';
 import { userStore } from '../stores/userStore';
 import { authStore } from '../stores/authStore';
 import { authService } from '../api/auth';
 
-
 export default {
-  name: "Navbar",
+  name: 'Navbar',
   components: {
     SearchBar,
     RouterLink,
@@ -111,6 +113,8 @@ export default {
     return {
       isHovered: false,
       showProfileDropdown: false,
+      searchText: '',
+      userCity: 'Loading...',
       searchIcon: `
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="11" cy="11" r="8" stroke="#FAF9F6" stroke-width="2"/>
@@ -123,10 +127,9 @@ export default {
       </svg>`
     };
   },
-  //profile picture
   computed: {
     profileImage() {
-      return userStore.profileImage && userStore.profileImage.trim() !== ''
+      return userStore.profileImage?.trim() !== ''
         ? userStore.profileImage
         : '/defaultProfile.svg';
     },
@@ -142,27 +145,57 @@ export default {
       this.showProfileDropdown = !this.showProfileDropdown;
     },
     handleLogout() {
-      // Close the dropdown
       this.showProfileDropdown = false;
-      
-      // Call the authService logout method
       authService.logout();
     },
-    // Close dropdown when clicking outside
     closeDropdownOnOutsideClick(event) {
       if (this.showProfileDropdown && !event.target.closest('.relative')) {
         this.showProfileDropdown = false;
       }
+    },
+    goToSearch(value) {
+      const searchValue = value || this.searchText.trim();
+      this.$router.push({
+        path: '/search',
+        query: searchValue ? { location: searchValue } : {}
+      });
+    },
+    async getUserCity() {
+      if (!navigator.geolocation) {
+        this.userCity = 'Unavailable';
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        async ({ coords }) => {
+          try {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json`
+            );
+            const data = await res.json();
+            this.userCity =
+              data.address?.city ||
+              data.address?.town ||
+              data.address?.village ||
+              data.address?.municipality ||
+              'Unknown';
+          } catch (e) {
+            this.userCity = 'Unknown';
+          }
+        },
+        () => {
+          this.userCity = 'Permission Denied';
+        },
+        { timeout: 10000 }
+      );
     }
   },
   mounted() {
-    // Add event listener to close dropdown when clicking outside
     document.addEventListener('click', this.closeDropdownOnOutsideClick);
+    this.getUserCity();
   },
   beforeUnmount() {
-    // Clean up event listener
     document.removeEventListener('click', this.closeDropdownOnOutsideClick);
   }
 };
 </script>
-

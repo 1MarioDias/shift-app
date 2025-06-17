@@ -7,9 +7,13 @@
         <select v-model="filters.eventType" class="w-full bg-stone-800 border border-stone-600 rounded-md px-3 py-2">
           <option value="">All Types</option>
           <option value="Party">Party</option>
+          <option value="Concert">Concert</option>
           <option value="Festival">Festival</option>
           <option value="Workshop">Workshop</option>
-          <option value="Concert">Concert</option>
+          <option value="Meeting">Meeting</option>
+          <option value="Conference">Conference</option>
+          <option value="Exhibition">Exhibition</option>
+          <option value="Other">Other</option>
         </select>
       </div>
       <div>
@@ -34,7 +38,7 @@
     <!-- Event List -->
     <div v-if="!mapMode" class="flex flex-col gap-6">
       <div
-        v-for="event in events"
+        v-for="event in filteredEvents"
         :key="event.id"
         class="cursor-pointer bg-stone-800 rounded-lg p-5 flex flex-col md:flex-row items-center justify-between gap-6 hover:bg-stone-700 transition"
         @click="goToEvent(event.id)"
@@ -74,28 +78,61 @@ export default {
           id: 1,
           title: "Sunset Party",
           location: "Porto",
-          coords: [41.1496, -8.6109],
-          date: "2025-05-25",
+          date: "2025-06-25",
           time: "18:00",
           type: "Party",
-          image: "/images/evento1.png"
+          image: "/images/evento1.jpg",
+          coords: [41.1496, -8.6109]
         },
         {
           id: 2,
           title: "Tech Meetup",
           location: "Lisbon",
-          coords: [38.7169, -9.1399],
-          date: "2025-06-01",
-          time: "15:00",
+          date: "2025-06-28",
+          time: "15:30",
           type: "Workshop",
-          image: "/images/evento2.jpg"
+          image: "/images/evento2.jpg",
+          coords: [38.7169, -9.1399]
+        },
+        {
+          id: 3,
+          title: "Rock Concert",
+          location: "Madrid",
+          date: "2025-07-01",
+          time: "20:00",
+          type: "Concert",
+          image: "/images/evento3.jpg",
+          coords: [40.4168, -3.7038]
         }
       ]
     };
   },
+  computed: {
+    filteredEvents() {
+      return this.events.filter(event => {
+        const matchesType = !this.filters.eventType || event.type === this.filters.eventType;
+        const matchesLocation = !this.filters.location || event.location.toLowerCase().includes(this.filters.location.toLowerCase());
+        const matchesDate = !this.filters.date || event.date === this.filters.date;
+        return matchesType && matchesLocation && matchesDate;
+      });
+    }
+  },
   watch: {
+    '$route.query': {
+      immediate: true,
+      handler(query) {
+        this.filters.location = query.location || '';
+        this.filters.eventType = query.eventType || '';
+        this.filters.date = query.date || '';
+      }
+    },
     mapMode(newVal) {
       if (newVal) {
+        this.$nextTick(() => this.initializeMap());
+      }
+    },
+    filteredEvents() {
+      if (this.mapMode) {
         this.$nextTick(() => this.initializeMap());
       }
     }
@@ -111,21 +148,13 @@ export default {
 
       this.map = L.map('map').setView([39.5, -8], 6);
 
-      // ✅ Previne que clicar no mapa feche os popups
-      this.map.on('popupclose', e => {
-        e.originalEvent?.stopPropagation?.();
-      });
-      this.map.on('click', e => {
-        e.originalEvent?.stopPropagation?.();
-      });
-
       L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
         subdomains: 'abcd',
         maxZoom: 19
       }).addTo(this.map);
 
-      this.events.forEach(event => {
+      this.filteredEvents.forEach(event => {
         if (event.coords) {
           const popupContent = `
             <div style="max-width: 200px; cursor:pointer;" onclick="window.location.href='/event/${event.id}'">
@@ -150,9 +179,8 @@ export default {
       });
     }
   }
-}
+};
 </script>
-
 
 
 <style scoped>

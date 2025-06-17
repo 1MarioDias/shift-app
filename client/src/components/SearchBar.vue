@@ -1,4 +1,3 @@
-<!-- SearchBar.vue -->
 <template>
   <div class="relative">
     <div :class="[containerClass, 'w-full rounded-2xl']">
@@ -9,6 +8,8 @@
             type="text"
             :placeholder="placeholder"
             :class="[inputClass, 'flex-1 bg-transparent']"
+            :value="modelValue"
+            @input="$emit('update:modelValue', $event.target.value)"
           />
         </div>
         <slot name="append"></slot>
@@ -21,6 +22,7 @@
 export default {
   name: 'SearchBar',
   props: {
+    modelValue: String,
     placeholder: {
       type: String,
       default: 'Search'

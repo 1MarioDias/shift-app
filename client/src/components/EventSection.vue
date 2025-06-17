@@ -31,6 +31,8 @@
             data: "1/1/2025",
             hora: "12:00",
             localizacao: "Porto",
+            coords: [40.4168, -3.7038],
+            fullAdress: "Rua do Porto",
             tipoEvento: "party",
             maxParticipantes: "10",
             estado: "",

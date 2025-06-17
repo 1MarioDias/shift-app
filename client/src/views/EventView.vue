@@ -6,7 +6,7 @@
     </div>
 
     <div class="flex items-start justify-between mb-[15px]">
-      <p class="text-base text-stone-50">{{ evento.data }}, {{ evento.localizacao }}</p>
+      <p class="text-base text-stone-50">{{ evento.data }}, {{ evento.fullAddress }}</p>
       <p class="text-base text-stone-50 text-right">{{ evento.tipoEvento }}, {{ evento.hora }}</p>
     </div>
 
@@ -57,16 +57,17 @@ export default {
   data() {
     return {
       evento: {
-        id: null,
-        titulo: '',
-        nomeAutor: '',
-        imagem: '',
-        descricao: '',
-        data: '',
-        hora: '',
-        localizacao: '',
-        tipoEvento: '',
-        linksRelevantes: ''
+      id: null,
+      titulo: '',
+      nomeAutor: '',
+      imagem: '',
+      descricao: '',
+      data: '',
+      hora: '',
+      localizacao: '',
+      fullAddress: '', 
+      tipoEvento: '',
+      linksRelevantes: ''
       },
       newComment: '',
       comments: []
@@ -108,6 +109,7 @@ export default {
           data: "2025-05-25",
           hora: "18:00",
           localizacao: "Porto",
+          fullAddress: "Rua do Porto 69, Porto",
           tipoEvento: "Party",
           linksRelevantes: "https://www.youtube.com/"
         },
@@ -120,6 +122,7 @@ export default {
           data: "2025-06-01",
           hora: "15:00",
           localizacao: "Lisbon",
+          fullAddress: "Rua do Porto 69, Porto",
           tipoEvento: "Workshop",
           linksRelevantes: "https://www.youtube.com/"
         }

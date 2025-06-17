@@ -65,6 +65,7 @@
             <input
               id="location"
               v-model="eventForm.location"
+              @blur="validateAddress"
               type="text"
               placeholder="e.g., Central Park, Lisbon"
               class="w-full bg-transparent border-b-2 placeholder-gray-500 text-lg focus:outline-none focus:border-[#426CFF] transition"
@@ -187,8 +188,8 @@
 </template>
 
 <script>
-import { eventosService } from '../api/eventos'; // Adjust path as needed
-import { authStore } from '../stores/authStore'; // Adjust path as needed
+import { eventosService } from '../api/eventos';
+import { authStore } from '../stores/authStore';
 
 export default {
   name: 'CreateEventView',
@@ -201,10 +202,13 @@ export default {
         eventDate: '',
         eventTime: '',
         location: '',
-        maxParticipants: null, // Initialize as null for optional
+        fullAddress: '',
+        latitude: null,
+        longitude: null,
+        maxParticipants: null,
         isPublic: true,
         linksRelevantes: '',
-        eventImageFile: null, // To store the File object
+        eventImageFile: null,
       },
       previewUrl: null,
       isLoading: false,
@@ -212,7 +216,7 @@ export default {
       apiErrorDetails: [],
       successMessage: null,
       createdEventId: null,
-      validationErrors: {}, // For client-side or specific field errors from backend
+      validationErrors: {},
     };
   },
   methods: {
@@ -222,29 +226,82 @@ export default {
     handleFileUpload(event) {
       const file = event.target.files[0];
       if (file) {
-        if (file.size > 5 * 1024 * 1024) { // 5MB limit
-            this.validationErrors.eventImageFile = 'File is too large. Max 5MB allowed.';
-            this.previewUrl = null;
-            this.eventForm.eventImageFile = null;
-            this.$refs.fileInput.value = ''; // Reset file input
-            return;
-        }
         const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+        if (file.size > 5 * 1024 * 1024) {
+          this.validationErrors.eventImageFile = 'File is too large. Max 5MB allowed.';
+          this.previewUrl = null;
+          this.eventForm.eventImageFile = null;
+          this.$refs.fileInput.value = '';
+          return;
+        }
         if (!allowedTypes.includes(file.type)) {
-            this.validationErrors.eventImageFile = 'Invalid file type. Only JPG, PNG, GIF allowed.';
-            this.previewUrl = null;
-            this.eventForm.eventImageFile = null;
-            this.$refs.fileInput.value = ''; // Reset file input
-            return;
+          this.validationErrors.eventImageFile = 'Invalid file type. Only JPG, PNG, GIF allowed.';
+          this.previewUrl = null;
+          this.eventForm.eventImageFile = null;
+          this.$refs.fileInput.value = '';
+          return;
         }
         this.eventForm.eventImageFile = file;
         this.previewUrl = URL.createObjectURL(file);
-        this.validationErrors.eventImageFile = null; // Clear error
+        this.validationErrors.eventImageFile = null;
       } else {
         this.eventForm.eventImageFile = null;
         this.previewUrl = null;
       }
     },
+
+    async validateAddress() {
+      const address = this.eventForm.location.trim();
+      if (!address) return;
+
+      try {
+        const coords = await this.geocodeLocation(address);
+        this.eventForm.latitude = coords.lat;
+        this.eventForm.longitude = coords.lon;
+
+        // Guarda o endereço original
+        this.eventForm.fullAddress = address;
+
+        // Deduz a cidade
+        const city = await this.reverseGeocodeCity(coords.lat, coords.lon);
+        if (city) {
+          this.eventForm.location = city;
+        }
+
+        this.validationErrors.location = null;
+      } catch (error) {
+        this.validationErrors.location = 'Location not recognized. Try a more specific address.';
+        this.eventForm.latitude = null;
+        this.eventForm.longitude = null;
+      }
+    },
+
+    async reverseGeocodeCity(lat, lon) {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'MyEventApp/1.0 (contact@example.com)',
+          'Accept-Language': 'pt'
+        }
+      });
+      const data = await response.json();
+
+      if (data && data.address) {
+        // Tenta obter cidade, fallback para município, vila ou aldeia
+        return (
+          data.address.city ||
+          data.address.town ||
+          data.address.village ||
+          data.address.county ||
+          'Unknown'
+        );
+      }
+
+      return 'Unknown';
+    },
+
+
+
     validateForm() {
       this.validationErrors = {};
       let isValid = true;
@@ -265,6 +322,7 @@ export default {
         this.validationErrors.eventTime = 'Event time is required.';
         isValid = false;
       }
+
       if (this.eventForm.eventDate && this.eventForm.eventTime) {
         const eventDateTime = new Date(`${this.eventForm.eventDate}T${this.eventForm.eventTime}`);
         if (eventDateTime <= new Date()) {
@@ -272,19 +330,22 @@ export default {
           isValid = false;
         }
       }
+
       if (!this.eventForm.location.trim()) {
         this.validationErrors.location = 'Location is required.';
         isValid = false;
       }
+
       if (!this.eventForm.eventType) {
         this.validationErrors.eventType = 'Event type is required.';
         isValid = false;
       }
-      if (this.eventForm.maxParticipants !== null && (isNaN(parseInt(this.eventForm.maxParticipants)) || parseInt(this.eventForm.maxParticipants) <= 1)) {
+
+      if (this.eventForm.maxParticipants !== null && (isNaN(this.eventForm.maxParticipants) || this.eventForm.maxParticipants < 2)) {
         this.validationErrors.maxParticipants = 'If provided, max participants must be a number greater than 1.';
         isValid = false;
       }
-      // LinksRelevantes: basic URL validation (optional)
+
       if (this.eventForm.linksRelevantes && !/^(ftp|http|https):\/\/[^ "]+$/.test(this.eventForm.linksRelevantes)) {
         this.validationErrors.linksRelevantes = 'Please enter a valid URL (e.g., http://example.com).';
         isValid = false;
@@ -292,6 +353,7 @@ export default {
 
       return isValid;
     },
+
     async submitForm() {
       this.apiError = null;
       this.apiErrorDetails = [];
@@ -303,10 +365,17 @@ export default {
         return;
       }
 
+      // 🚩 Força a validação e geocodificação
+      await this.validateAddress();
+      if (this.eventForm.latitude === null || this.eventForm.longitude === null) {
+        this.apiError = 'The location provided could not be geocoded.';
+        return;
+      }
+
       if (!authStore.isLoggedIn()) {
-          this.apiError = "You must be logged in to create an event. Redirecting to login...";
-          setTimeout(() => this.$router.push('/login'), 2000);
-          return;
+        this.apiError = "You must be logged in to create an event. Redirecting to login...";
+        setTimeout(() => this.$router.push('/login'), 2000);
+        return;
       }
 
       this.isLoading = true;
@@ -318,43 +387,36 @@ export default {
       formData.append('eventDate', this.eventForm.eventDate);
       formData.append('eventTime', this.eventForm.eventTime);
       formData.append('location', this.eventForm.location);
+      formData.append('fullAddress', this.eventForm.fullAddress);
+      formData.append('latitude', this.eventForm.latitude);
+      formData.append('longitude', this.eventForm.longitude);
       if (this.eventForm.maxParticipants !== null && this.eventForm.maxParticipants !== '') {
         formData.append('maxParticipants', this.eventForm.maxParticipants);
       }
-      formData.append('isPublic', this.eventForm.isPublic); // Boolean will be stringified
+      formData.append('isPublic', this.eventForm.isPublic);
       formData.append('linksRelevantes', this.eventForm.linksRelevantes);
-      
       if (this.eventForm.eventImageFile) {
-        formData.append('eventImage', this.eventForm.eventImageFile); // Key 'eventImage' for Multer
+        formData.append('eventImage', this.eventForm.eventImageFile);
       }
 
       try {
         const result = await eventosService.createEvent(formData);
         this.successMessage = result.message || 'Event created successfully!';
         this.createdEventId = result.eventId;
-        // Reset form (optional)
-        // this.eventForm = { title: '', description: '', eventType: '', eventDate: '', eventTime: '', location: '', maxParticipants: null, isPublic: true, linksRelevantes: '', eventImageFile: null };
-        // this.previewUrl = null;
-        // this.$refs.fileInput.value = '';
       } catch (error) {
         this.apiError = error.message || 'An unknown error occurred.';
         if (error.details) {
-            this.apiErrorDetails = error.details; // For Sequelize validation errors from backend
+          this.apiErrorDetails = error.details;
         }
         console.error("Submission error:", error);
       } finally {
         this.isLoading = false;
       }
     }
-  },
-  mounted() {
-    // Set a default date if needed, e.g., tomorrow
-    // const tomorrow = new Date();
-    // tomorrow.setDate(tomorrow.getDate() + 1);
-    // this.eventForm.eventDate = tomorrow.toISOString().split('T')[0];
   }
 };
 </script>
+
 
 <style scoped>
 /* Add any specific styles if needed, though Tailwind should cover most */
