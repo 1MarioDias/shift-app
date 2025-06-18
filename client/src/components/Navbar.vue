@@ -154,7 +154,7 @@ export default {
       }
     },
     goToSearch(value) {
-      const searchValue = value || this.searchText.trim();
+      const searchValue = typeof value === 'string' ? value : this.searchText?.trim();
       this.$router.push({
         path: '/search',
         query: searchValue ? { location: searchValue } : {}

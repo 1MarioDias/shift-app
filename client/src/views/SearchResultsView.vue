@@ -38,29 +38,30 @@
     <!-- Event List -->
     <div v-if="!mapMode" class="flex flex-col gap-6">
       <div
-        v-for="event in filteredEvents"
-        :key="event.id"
+        v-for="event in events"
+        :key="event._id"
         class="cursor-pointer bg-stone-800 rounded-lg p-5 flex flex-col md:flex-row items-center justify-between gap-6 hover:bg-stone-700 transition"
-        @click="goToEvent(event.id)"
+        @click="goToEvent(event._id)"
       >
         <div class="w-full md:w-98 h-40 flex-shrink-0">
-          <img :src="event.image" alt="Image" class="w-full h-full object-cover rounded-md" />
+          <img :src="event.image || '/defaultEvent.jpg'" alt="Image" class="w-full h-full object-cover rounded-md" />
         </div>
         <div class="flex-1">
-          <h3 class="text-3xl font-semibold">{{ event.title }}</h3>
-          <p class="text-lg text-stone-300">{{ event.date }} - {{ event.location }}</p>
-          <p class="text-lg text-stone-400 mt-5">{{ event.type }} • {{ event.time }}</p>
+          <h3 class="text-3xl font-semibold">{{ event.title || 'Untitled' }}</h3>
+          <p class="text-lg text-stone-300">{{ formatDate(event.date) }} - {{ event.location || 'Unknown' }}</p>
+          <p class="text-lg text-stone-400 mt-5">{{ event.eventType || 'Other' }} • {{ event.time || '00:00' }}</p>
         </div>
       </div>
     </div>
 
     <!-- Leaflet Map -->
-    <div v-else id="map" class="h-[500px] rounded-lg"></div>
+    <div v-else id="map" class="h-[500px] rounded-lg z-0"></div>
   </div>
 </template>
 
 <script>
 import L from 'leaflet';
+import { eventosService } from '../api/eventos';
 
 export default {
   name: "SearchResultsView",
@@ -73,49 +74,8 @@ export default {
         location: '',
         date: ''
       },
-      events: [
-        {
-          id: 1,
-          title: "Sunset Party",
-          location: "Porto",
-          date: "2025-06-25",
-          time: "18:00",
-          type: "Party",
-          image: "/images/evento1.jpg",
-          coords: [41.1496, -8.6109]
-        },
-        {
-          id: 2,
-          title: "Tech Meetup",
-          location: "Lisbon",
-          date: "2025-06-28",
-          time: "15:30",
-          type: "Workshop",
-          image: "/images/evento2.jpg",
-          coords: [38.7169, -9.1399]
-        },
-        {
-          id: 3,
-          title: "Rock Concert",
-          location: "Madrid",
-          date: "2025-07-01",
-          time: "20:00",
-          type: "Concert",
-          image: "/images/evento3.jpg",
-          coords: [40.4168, -3.7038]
-        }
-      ]
+      events: []
     };
-  },
-  computed: {
-    filteredEvents() {
-      return this.events.filter(event => {
-        const matchesType = !this.filters.eventType || event.type === this.filters.eventType;
-        const matchesLocation = !this.filters.location || event.location.toLowerCase().includes(this.filters.location.toLowerCase());
-        const matchesDate = !this.filters.date || event.date === this.filters.date;
-        return matchesType && matchesLocation && matchesDate;
-      });
-    }
   },
   watch: {
     '$route.query': {
@@ -124,6 +84,13 @@ export default {
         this.filters.location = query.location || '';
         this.filters.eventType = query.eventType || '';
         this.filters.date = query.date || '';
+        this.fetchEvents();
+      }
+    },
+    filters: {
+      deep: true,
+      handler() {
+        this.fetchEvents();
       }
     },
     mapMode(newVal) {
@@ -131,7 +98,7 @@ export default {
         this.$nextTick(() => this.initializeMap());
       }
     },
-    filteredEvents() {
+    events() {
       if (this.mapMode) {
         this.$nextTick(() => this.initializeMap());
       }
@@ -139,9 +106,43 @@ export default {
   },
   methods: {
     goToEvent(id) {
+      if (!id) return;
       this.$router.push({ name: 'EventView', params: { id } });
     },
-    initializeMap() {
+    async fetchEvents() {
+      try {
+        const params = {
+          eventType: this.filters.eventType,
+          location: this.filters.location,
+          datetime: this.filters.date
+        };
+
+        const response = await eventosService.getPublicEvents(params);
+        let allEvents = Array.isArray(response.data) ? response.data : [];
+
+        if (this.filters.date) {
+          const selectedDate = new Date(this.filters.date);
+          allEvents = allEvents.filter(event => {
+            const eventDate = new Date(event.date);
+            return (
+              eventDate.getFullYear() === selectedDate.getFullYear() &&
+              eventDate.getMonth() === selectedDate.getMonth() &&
+              eventDate.getDate() === selectedDate.getDate()
+            );
+          });
+        }
+
+        this.events = allEvents;
+      } catch (error) {
+        console.error('Erro ao buscar eventos:', error.message);
+      }
+    },
+    formatDate(date) {
+      if (!date) return 'N/A';
+      const d = new Date(date);
+      return d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    },
+    async initializeMap() {
       if (this.map) {
         this.map.remove();
       }
@@ -154,37 +155,63 @@ export default {
         maxZoom: 19
       }).addTo(this.map);
 
-      this.filteredEvents.forEach(event => {
-        if (event.coords) {
+      for (const event of this.events) {
+        if (!event.latitude || !event.longitude) {
+          try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(event.location)}`);
+            const data = await response.json();
+            if (data.length) {
+              event.latitude = parseFloat(data[0].lat);
+              event.longitude = parseFloat(data[0].lon);
+            }
+          } catch (err) {
+            console.warn('Geocoding failed for', event.location);
+            continue;
+          }
+        }
+
+        if (event.latitude && event.longitude) {
+          const marker = L.marker([event.latitude, event.longitude], {
+            icon: L.divIcon({
+              html: `<div style="font-size: 2rem; text-align: center;">📍</div>`,
+              iconSize: [48, 48],
+              iconAnchor: [0, 0],
+              className: '' 
+            })
+          }).addTo(this.map);
+
           const popupContent = `
-            <div style="max-width: 200px; cursor:pointer;" onclick="window.location.href='/event/${event.id}'">
-              <img src="${event.image}" alt="${event.title}" style="width: 100%; border-radius: 8px; margin-bottom: 8px;" />
+            <div style="max-width: 200px; cursor:pointer;" onclick="window.location.href='/event/${event._id}'">
+              <img src="${event.image || '/defaultEvent.jpg'}" alt="${event.title}" style="width: 100%; border-radius: 8px; margin-bottom: 8px;" />
               <strong>${event.title}</strong><br />
-              ${event.date} - ${event.location}<br />
-              <span style="color: gray;">${event.type} • ${event.time}</span>
+              ${this.formatDate(event.date)} - ${event.location}<br />
+              <span style="color: gray;">${event.eventType} • ${event.time}</span>
             </div>
           `;
 
-          const popup = L.popup({
-            closeButton: false,
-            autoClose: false,
-            closeOnClick: false,
-            className: 'custom-popup'
-          })
-            .setLatLng(event.coords)
-            .setContent(popupContent);
-
-          popup.addTo(this.map);
+          marker.bindPopup(popupContent, { className: 'custom-popup' });
         }
-      });
+      }
     }
   }
 };
 </script>
 
-
 <style scoped>
 #map {
   width: 100%;
+}
+
+
+
+.leaflet-popup-content-wrapper {
+  background: #fff;
+  color: #111;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.leaflet-popup-tip {
+  background: #fff;
 }
 </style>

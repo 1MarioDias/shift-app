@@ -6,13 +6,17 @@
     />
     <div class="relative z-10 flex flex-col">
       <Hero :image="heroImage" />
-      <AboutSection :image="aboutImage" />
+      
+      <!-- Adiciona o ID aqui -->
+      <div id="about-section">
+        <AboutSection :image="aboutImage" />
+      </div>
+
       <FeaturedEvents :events="featuredEvents" />
       <Footer />
     </div>
   </div>
 </template>
-
 
 <script>
   import Hero from "../components/Hero.vue";

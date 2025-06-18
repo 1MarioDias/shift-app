@@ -64,7 +64,7 @@
             <label for="location" class="block text-sm font-medium text-gray-300 mb-1">Location*</label>
             <input
               id="location"
-              v-model="eventForm.location"
+              v-model="rawAddress"
               @blur="validateAddress"
               type="text"
               placeholder="e.g., Central Park, Lisbon"
@@ -195,14 +195,15 @@ export default {
   name: 'CreateEventView',
   data() {
     return {
+      rawAddress: '', // o que o utilizador escreve no input
       eventForm: {
         title: '',
         description: '',
         eventType: '',
         eventDate: '',
         eventTime: '',
-        location: '',
-        fullAddress: '',
+        location: '',       // cidade para pesquisa
+        fullAddress: '',    // endereço completo original
         latitude: null,
         longitude: null,
         maxParticipants: null,
@@ -223,135 +224,120 @@ export default {
     triggerFileInput() {
       this.$refs.fileInput.click();
     },
+
     handleFileUpload(event) {
       const file = event.target.files[0];
-      if (file) {
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-        if (file.size > 5 * 1024 * 1024) {
-          this.validationErrors.eventImageFile = 'File is too large. Max 5MB allowed.';
-          this.previewUrl = null;
-          this.eventForm.eventImageFile = null;
-          this.$refs.fileInput.value = '';
-          return;
-        }
-        if (!allowedTypes.includes(file.type)) {
-          this.validationErrors.eventImageFile = 'Invalid file type. Only JPG, PNG, GIF allowed.';
-          this.previewUrl = null;
-          this.eventForm.eventImageFile = null;
-          this.$refs.fileInput.value = '';
-          return;
-        }
-        this.eventForm.eventImageFile = file;
-        this.previewUrl = URL.createObjectURL(file);
-        this.validationErrors.eventImageFile = null;
-      } else {
-        this.eventForm.eventImageFile = null;
-        this.previewUrl = null;
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        this.validationErrors.eventImageFile = 'File is too large. Max 5MB allowed.';
+        return;
       }
+      if (!allowedTypes.includes(file.type)) {
+        this.validationErrors.eventImageFile = 'Invalid file type. Only JPG, PNG, GIF allowed.';
+        return;
+      }
+
+      this.eventForm.eventImageFile = file;
+      this.previewUrl = URL.createObjectURL(file);
+      this.validationErrors.eventImageFile = null;
     },
 
-    async validateAddress() {
-      const address = this.eventForm.location.trim();
-      if (!address) return;
-
-      try {
-        const coords = await this.geocodeLocation(address);
-        this.eventForm.latitude = coords.lat;
-        this.eventForm.longitude = coords.lon;
-
-        // Guarda o endereço original
-        this.eventForm.fullAddress = address;
-
-        // Deduz a cidade
-        const city = await this.reverseGeocodeCity(coords.lat, coords.lon);
-        if (city) {
-          this.eventForm.location = city;
+    async geocodeLocation(address) {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'ShiftApp/1.0 (contact@shiftapp.test)',
+          'Accept-Language': 'en'
         }
-
-        this.validationErrors.location = null;
-      } catch (error) {
-        this.validationErrors.location = 'Location not recognized. Try a more specific address.';
-        this.eventForm.latitude = null;
-        this.eventForm.longitude = null;
-      }
+      });
+      const data = await response.json();
+      if (!data || !data.length) throw new Error('Location not found');
+      return data[0];
     },
 
     async reverseGeocodeCity(lat, lon) {
       const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
       const response = await fetch(url, {
         headers: {
-          'User-Agent': 'MyEventApp/1.0 (contact@example.com)',
+          'User-Agent': 'ShiftApp/1.0 (contact@shiftapp.test)',
           'Accept-Language': 'pt'
         }
       });
       const data = await response.json();
-
-      if (data && data.address) {
-        // Tenta obter cidade, fallback para município, vila ou aldeia
-        return (
-          data.address.city ||
-          data.address.town ||
-          data.address.village ||
-          data.address.county ||
-          'Unknown'
-        );
-      }
-
-      return 'Unknown';
+      if (!data.address) return 'Unknown';
+      return (
+        data.address.city ||
+        data.address.town ||
+        data.address.village ||
+        data.address.county ||
+        'Unknown'
+      );
     },
 
+    async validateAddress() {
+      const fullAddress = this.rawAddress.trim();
+      if (!fullAddress) return;
 
+      try {
+        const coords = await this.geocodeLocation(fullAddress);
+        if (!coords || !coords.lat || !coords.lon) throw new Error('Invalid coordinates');
+
+        this.eventForm.fullAddress = fullAddress;
+        this.eventForm.latitude = coords.lat;
+        this.eventForm.longitude = coords.lon;
+
+        const city = await this.reverseGeocodeCity(coords.lat, coords.lon);
+        this.eventForm.location = city || 'Unknown';
+
+        this.validationErrors.location = null;
+      } catch (error) {
+        this.eventForm.fullAddress = '';
+        this.eventForm.latitude = null;
+        this.eventForm.longitude = null;
+        this.eventForm.location = '';
+        this.validationErrors.location = 'Morada não reconhecida. Tente ser mais específico.';
+      }
+    },
 
     validateForm() {
       this.validationErrors = {};
-      let isValid = true;
+      let valid = true;
 
-      if (!this.eventForm.title.trim()) {
-        this.validationErrors.title = 'Event title is required.';
-        isValid = false;
-      } else if (this.eventForm.title.trim().length < 5 || this.eventForm.title.trim().length > 255) {
-        this.validationErrors.title = 'Title must be between 5 and 255 characters.';
-        isValid = false;
+      if (!this.eventForm.title.trim() || this.eventForm.title.length < 5) {
+        this.validationErrors.title = 'Title must be at least 5 characters.';
+        valid = false;
       }
 
       if (!this.eventForm.eventDate) {
-        this.validationErrors.eventDate = 'Event date is required.';
-        isValid = false;
+        this.validationErrors.eventDate = 'Date is required.';
+        valid = false;
       }
+
       if (!this.eventForm.eventTime) {
-        this.validationErrors.eventTime = 'Event time is required.';
-        isValid = false;
+        this.validationErrors.eventTime = 'Time is required.';
+        valid = false;
       }
 
-      if (this.eventForm.eventDate && this.eventForm.eventTime) {
-        const eventDateTime = new Date(`${this.eventForm.eventDate}T${this.eventForm.eventTime}`);
-        if (eventDateTime <= new Date()) {
-          this.validationErrors.eventDate = 'Event date and time must be in the future.';
-          isValid = false;
-        }
+      const now = new Date();
+      const eventDateTime = new Date(`${this.eventForm.eventDate}T${this.eventForm.eventTime}`);
+      if (eventDateTime <= now) {
+        this.validationErrors.eventDate = 'Date must be in the future.';
+        valid = false;
       }
 
-      if (!this.eventForm.location.trim()) {
-        this.validationErrors.location = 'Location is required.';
-        isValid = false;
+      if (!this.rawAddress.trim()) {
+        this.validationErrors.location = 'Address is required.';
+        valid = false;
       }
 
       if (!this.eventForm.eventType) {
-        this.validationErrors.eventType = 'Event type is required.';
-        isValid = false;
+        this.validationErrors.eventType = 'Type is required.';
+        valid = false;
       }
 
-      if (this.eventForm.maxParticipants !== null && (isNaN(this.eventForm.maxParticipants) || this.eventForm.maxParticipants < 2)) {
-        this.validationErrors.maxParticipants = 'If provided, max participants must be a number greater than 1.';
-        isValid = false;
-      }
-
-      if (this.eventForm.linksRelevantes && !/^(ftp|http|https):\/\/[^ "]+$/.test(this.eventForm.linksRelevantes)) {
-        this.validationErrors.linksRelevantes = 'Please enter a valid URL (e.g., http://example.com).';
-        isValid = false;
-      }
-
-      return isValid;
+      return valid;
     },
 
     async submitForm() {
@@ -361,54 +347,46 @@ export default {
       this.createdEventId = null;
 
       if (!this.validateForm()) {
-        this.apiError = "Please correct the errors in the form.";
+        this.apiError = 'Please fix errors in the form.';
         return;
       }
 
-      // 🚩 Força a validação e geocodificação
-      await this.validateAddress();
-      if (this.eventForm.latitude === null || this.eventForm.longitude === null) {
-        this.apiError = 'The location provided could not be geocoded.';
-        return;
-      }
+        await this.validateAddress();
+          if (
+            !this.eventForm.latitude ||
+            !this.eventForm.longitude ||
+            !this.eventForm.location ||
+            !this.eventForm.fullAddress
+          ) {
+            this.apiError = 'Geolocation failed. Please enter a valid address.';
+            return;
+          }
 
       if (!authStore.isLoggedIn()) {
-        this.apiError = "You must be logged in to create an event. Redirecting to login...";
-        setTimeout(() => this.$router.push('/login'), 2000);
+        this.apiError = 'Please login.';
+        setTimeout(() => this.$router.push('/login'), 1500);
         return;
       }
 
       this.isLoading = true;
-
       const formData = new FormData();
-      formData.append('title', this.eventForm.title);
-      formData.append('description', this.eventForm.description);
-      formData.append('eventType', this.eventForm.eventType);
-      formData.append('eventDate', this.eventForm.eventDate);
-      formData.append('eventTime', this.eventForm.eventTime);
-      formData.append('location', this.eventForm.location);
-      formData.append('fullAddress', this.eventForm.fullAddress);
-      formData.append('latitude', this.eventForm.latitude);
-      formData.append('longitude', this.eventForm.longitude);
-      if (this.eventForm.maxParticipants !== null && this.eventForm.maxParticipants !== '') {
-        formData.append('maxParticipants', this.eventForm.maxParticipants);
-      }
-      formData.append('isPublic', this.eventForm.isPublic);
-      formData.append('linksRelevantes', this.eventForm.linksRelevantes);
-      if (this.eventForm.eventImageFile) {
-        formData.append('eventImage', this.eventForm.eventImageFile);
+      for (const key in this.eventForm) {
+        if (
+          this.eventForm[key] !== null &&
+          this.eventForm[key] !== '' &&
+          this.eventForm[key] !== undefined
+        ) {
+          formData.append(key, this.eventForm[key]);
+        }
       }
 
       try {
         const result = await eventosService.createEvent(formData);
-        this.successMessage = result.message || 'Event created successfully!';
+        this.successMessage = result.message || 'Event created!';
         this.createdEventId = result.eventId;
-      } catch (error) {
-        this.apiError = error.message || 'An unknown error occurred.';
-        if (error.details) {
-          this.apiErrorDetails = error.details;
-        }
-        console.error("Submission error:", error);
+      } catch (err) {
+        this.apiError = err.message || 'Unknown error';
+        if (err.details) this.apiErrorDetails = err.details;
       } finally {
         this.isLoading = false;
       }
@@ -416,6 +394,7 @@ export default {
   }
 };
 </script>
+
 
 
 <style scoped>
