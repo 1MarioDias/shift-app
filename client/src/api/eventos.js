@@ -116,6 +116,109 @@ export const eventosService = {
         }
     },
 
+    async getCommentsForEvent(eventId, page = 0, pageSize = 10) {
+        try {
+            const response = await fetch(`${API_URL}/events/${eventId}/comments?page=${page}&pageSize=${pageSize}`, {
+                headers: {
+                    ...authStore.getAuthHeaders()
+                }
+            });
+            if (!response.ok) {
+                let errorPayload = { message: `Error fetching comments for event ${eventId}. Status: ${response.status}` };
+                try {
+                    const errorData = await response.json();
+                    errorPayload.message = errorData.errorMessage || errorData.error || errorPayload.message;
+                } catch (e) {
+                    // Ignore if error response is not JSON
+                }
+                throw new Error(errorPayload.message);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error(`API Error fetching comments for event ${eventId}:`, error.message || error);
+            throw error;
+        }
+    },
+
+    async addCommentToEvent(eventId, text) {
+        if (!authStore.isLoggedIn()) {
+            return Promise.reject(new Error('Authentication required to comment.'));
+        }
+        try {
+            const response = await fetch(`${API_URL}/events/${eventId}/comments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...authStore.getAuthHeaders()
+                },
+                body: JSON.stringify({ text })
+            });
+
+            const responseData = await response.json();
+            if (!response.ok) {
+                const message = responseData.errorMessage || responseData.message || `Error adding comment. Status: ${response.status}`;
+                throw new Error(message);
+            }
+            return responseData;
+        } catch (error) {
+            console.error(`API Error adding comment to event ${eventId}:`, error.message || error);
+            throw error;
+        }
+    },
+
+    async deleteComment(commentId) {
+        if (!authStore.isLoggedIn()) {
+            return Promise.reject(new Error('Authentication required to delete a comment.'));
+        }
+        try {
+            const response = await fetch(`${API_URL}/comments/${commentId}`, {
+                method: 'DELETE',
+                headers: {
+                    ...authStore.getAuthHeaders()
+                }
+            });
+
+            if (response.status === 204) {
+                return { success: true };
+            }
+
+            if (!response.ok) {
+                let errorPayload = { message: `Error deleting comment ${commentId}. Status: ${response.status}` };
+                try {
+                    const errorData = await response.json();
+                    errorPayload.message = errorData.errorMessage || errorData.error || errorPayload.message;
+                } catch (e) {
+                    // Ignore
+                }
+                throw new Error(errorPayload.message);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error(`API Error deleting comment ${commentId}:`, error.message || error);
+            throw error;
+        }
+    },
+
+    async cancelParticipation(eventId) {
+        if (!authStore.isLoggedIn()) {
+            return Promise.reject(new Error('Authentication required.'));
+        }
+        try {
+            const response = await fetch(`${API_URL}/events/${eventId}/participations`, {
+                method: 'DELETE',
+                headers: { ...authStore.getAuthHeaders() }
+            });
+            if (response.status !== 204) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.errorMessage || 'Failed to cancel participation.');
+            }
+            return { success: true };
+        } catch (error) {
+            console.error(`API Error canceling participation for event ${eventId}:`, error.message || error);
+            throw error;
+        }
+    },
+
     /*
     Update campos específicos dum evento
     AUTH para admin OU criador do evento.

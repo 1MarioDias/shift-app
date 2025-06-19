@@ -1,5 +1,11 @@
 <template>
-  <div class="px-10 py-10 text-white font-sans max-w-6xl mx-auto">
+  <div v-if="isLoading" class="flex justify-center items-center h-screen">
+    <p class="text-white text-2xl">Loading Event...</p>
+  </div>
+  <div v-else-if="error" class="flex justify-center items-center h-screen">
+    <p class="text-red-500 text-2xl">{{ error }}</p>
+  </div>
+  <div v-else-if="evento" class="px-10 py-10 text-white font-sans max-w-6xl mx-auto">
     <!-- Event Image -->
     <div class="relative w-full mx-auto rounded-xl overflow-hidden mb-5">
       <img :src="evento.imagem" alt="Event Image" class="w-full h-[300px] object-cover" />
@@ -7,7 +13,7 @@
 
     <!-- Info + Buttons -->
     <div class="flex items-start justify-between mb-[15px]">
-      <p class="text-base text-stone-50">{{ evento.data }}, {{ evento.fullAddress }}</p>
+      <p class="text-base text-stone-50">{{ formattedDate }}, {{ evento.localizacao }}</p>
       <div class="flex items-center gap-4">
         <!-- Join / Waitlist Button -->
         <button
@@ -19,69 +25,51 @@
         >
           {{ evento.cheio ? 'Join Waitlist' : 'Join Event' }}
         </button>
-
         <!-- Favorite Button -->
-        <button @click="toggleFavorite" class="focus:outline-none" :aria-label="isFavorited ? 'Remove from favorites' : 'Add to favorites'">
+        <button @click="toggleFavorite" class="p-2 rounded-full hover:bg-stone-700 transition">
           <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="currentColor"
-            viewBox="0 0 24 24"
             :class="isFavorited ? 'text-red-500' : 'text-white'"
-            class="w-6 h-6 transition-colors duration-200"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M12.001 4.529c2.349-2.532 6.364-2.532 8.713 0 2.295 2.474 2.31 6.415.043 8.902l-7.816 7.887a1 1 0 01-1.42 0l-7.816-7.887c-2.268-2.487-2.252-6.428.043-8.902 2.35-2.532 6.364-2.532 8.713 0z"
-              clip-rule="evenodd"
-            />
+            class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
           </svg>
         </button>
-
-        <p class="text-base text-stone-50">{{ evento.tipoEvento }}, {{ evento.hora }}</p>
       </div>
     </div>
 
-    <!-- Title & Author -->
-    <h2 class="mt-5 text-4xl font-bold mb-[2px]">{{ evento.titulo }}</h2>
-    <p class="text-base text-stone-50 mb-[10px]">{{ evento.nomeAutor }}</p>
+    <!-- Title -->
+    <h1 class="text-4xl font-bold mb-[10px]">{{ evento.titulo }}</h1>
+    <p class="text-base text-stone-50 mb-[10px]">by {{ evento.nomeAutor }}</p>
 
     <!-- Description & Links -->
     <div class="mt-5 text-base text-stone-50 max-w-[1400px]">
-      <p>{{ evento.descricao }}</p>
-      <h2 class="text-2xl font-bold mb-[10px] mt-10">Important Links</h2>
-      <a :href="evento.linksRelevantes" target="_blank" class="font-bold text-[#FFD300] hover:text-white mt-5">
-        <p>Youtube</p>
-      </a>
+      <p class="whitespace-pre-wrap">{{ evento.descricao }}</p>
+      <div v-if="evento.linksRelevantes">
+        <h2 class="text-2xl font-bold mb-[10px] mt-10">Important Links</h2>
+        <a :href="evento.linksRelevantes" target="_blank" class="font-bold text-[#FFD300] hover:text-white mt-5">
+          <p>{{ evento.linksRelevantes }}</p>
+        </a>
+      </div>
     </div>
 
     <!-- Comments -->
     <div class="mt-10 max-w-[1400px]">
-      <h3 class="text-xl font-semibold mb-4">Comments</h3>
-      <form @submit.prevent="addComment" class="mb-6">
+      <h3 class="text-xl font-semibold mb-4">Comments ({{ comments.length }})</h3>
+      <form @submit.prevent="addComment" class="mb-6" v-if="isLoggedIn">
         <input v-model="newComment" placeholder="Your comment..." class="w-full p-2 rounded bg-stone-800 border border-stone-700" />
-        <button type="submit" class="mt-5 px-4 py-2 bg-[#FFD300] text-black rounded hover:bg-white">Post Comment</button>
+        <button type="submit" class="mt-2 px-4 py-1 text-sm font-medium rounded bg-[#FFD300] text-black hover:bg-white">Post Comment</button>
       </form>
-
-      <div class="mt-5 space-y-4">
-        <!-- Static Comments -->
-        <div class="flex items-start gap-3">
-          <img src="/defaultProfile.svg" class="w-10 h-10 rounded-full" />
-          <div><p class="font-semibold">UserName</p><p>This is a comment.</p></div>
+      <div class="space-y-4">
+        <div v-if="comments.length === 0">
+            <p>No comments yet. Be the first to comment!</p>
         </div>
-        <div class="flex items-start gap-3">
-          <img src="/defaultProfile.svg" class="w-10 h-10 rounded-full" />
-          <div><p class="font-semibold">UserName2</p><p>This is a second comment.</p></div>
-        </div>
-
-        <!-- Dynamic Comments -->
-        <div v-for="(comment, index) in comments" :key="index" class="flex items-start gap-3">
-          <img :src="profileImage" class="w-10 h-10 rounded-full" />
+        <div v-for="(comment, index) in comments" :key="comment.id" class="flex items-start space-x-3">
+          <img :src="profileImage" alt="User" class="w-10 h-10 rounded-full" />
           <div>
             <p class="font-semibold">{{ comment.username }}</p>
-            <p>{{ comment.text }}</p>
+            <p class="text-stone-300">{{ comment.text }}</p>
             <button
-              v-if="comment.username === username"
-              @click="deleteComment(index)"
+              v-if="comment.userId === userId"
+              @click="deleteComment(comment.id, index)"
               class="text-sm text-red-400 hover:text-red-600 mt-1"
             >
               Delete
@@ -95,28 +83,19 @@
 
 <script>
 import { userStore } from '../stores/userStore';
+import { authStore } from '../stores/authStore';
+import { eventosService } from '../api/eventos';
 
 export default {
   name: 'EventView',
   data() {
     return {
-      evento: {
-        id: null,
-        titulo: '',
-        nomeAutor: '',
-        imagem: '',
-        descricao: '',
-        data: '',
-        hora: '',
-        localizacao: '',
-        fullAddress: '',
-        tipoEvento: '',
-        linksRelevantes: '',
-        cheio: false // <- usado agora no lugar de "lotado"
-      },
+      evento: null,
+      isLoading: true,
+      error: null,
       newComment: '',
       comments: [],
-      isFavorited: false
+      isFavorited: false,
     };
   },
   computed: {
@@ -125,75 +104,110 @@ export default {
     },
     username() {
       return userStore.username || 'User';
+    },
+    userId() {
+        return userStore.userId;
+    },
+    isLoggedIn() {
+        return authStore.isLoggedIn();
+    },
+    formattedDate() {
+        if (!this.evento || !this.evento.data) return '';
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        return new Date(this.evento.data + 'T00:00:00').toLocaleDateString('pt-PT', options);
     }
   },
-  mounted() {
-    const id = parseInt(this.$route.params.id);
-    this.loadEvent(id);
+  async created() {
+    const eventId = this.$route.params.id;
+    if (eventId && !isNaN(parseInt(eventId))) {
+      await this.loadEvent(eventId);
+      await this.loadComments(eventId);
+    } else {
+        this.error = "Invalid or missing Event ID.";
+        this.isLoading = false;
+    }
   },
   methods: {
-    loadEvent(id) {
-      const eventos = [
-        {
-          id: 1,
-          titulo: "Sunset Party",
-          nomeAutor: "John Doe",
-          imagem: "/images/evento1.png",
-          descricao: "A sunset-themed party with music and drinks.",
-          data: "2025-05-25",
-          hora: "18:00",
-          localizacao: "Porto",
-          fullAddress: "Rua do Porto 69, Porto",
-          tipoEvento: "Party",
-          linksRelevantes: "https://www.youtube.com/",
-          cheio: false
-        },
-        {
-          id: 2,
-          titulo: "Tech Meetup",
-          nomeAutor: "Jane Smith",
-          imagem: "/images/evento2.jpg",
-          descricao: "Networking and talks about tech.",
-          data: "2025-06-01",
-          hora: "15:00",
-          localizacao: "Lisbon",
-          fullAddress: "Rua do Porto 69, Porto",
-          tipoEvento: "Workshop",
-          linksRelevantes: "https://www.youtube.com/",
-          cheio: true
-        }
-      ];
-
-      const found = eventos.find(e => e.id === id);
-      if (found) {
-        this.evento = found;
-      } else {
-        this.evento.titulo = "Event Not Found";
+    async loadEvent(id) {
+      this.isLoading = true;
+      this.error = null;
+      try {
+        const response = await eventosService.getEventById(id);
+        this.evento = {
+          id: response.eventId,
+          titulo: response.title,
+          nomeAutor: response.organizer ? response.organizer.organizerName : 'Unknown Author',
+          imagem: response.image || '/images/default-event.png',
+          descricao: response.description,
+          data: response.date,
+          hora: response.time,
+          localizacao: response.location,
+          tipoEvento: response.eventType,
+          linksRelevantes: response.linksRelevantes,
+          cheio: response.maxParticipants !== null && response.currentParticipants >= response.maxParticipants,
+        };
+      } catch (err) {
+        this.error = err.message || 'Failed to load event details.';
+        console.error(err);
+      } finally {
+        this.isLoading = false;
       }
+    },
+    async loadComments(eventId) {
+        try {
+            const response = await eventosService.getCommentsForEvent(eventId);
+            this.comments = response.data.map(comment => ({
+                id: comment.commentId,
+                username: comment.user.userName,
+                text: comment.text,
+                userId: comment.user.userId
+            }));
+        } catch (error) {
+            console.error('Failed to load comments:', error);
+        }
+    },
+    async addComment() {
+      const text = this.newComment.trim();
+      if (!text || !this.evento) return;
+
+      try {
+        const response = await eventosService.addCommentToEvent(this.evento.id, text);
+        const newCommentData = response.comment;
+        this.comments.unshift({
+            id: newCommentData.commentId,
+            username: newCommentData.user.userName,
+            text: newCommentData.text,
+            userId: newCommentData.user.userId
+        });
+        this.newComment = '';
+      } catch (error) {
+          console.error('Failed to add comment:', error);
+          alert(`Error: ${error.message}`);
+      }
+    },
+    async deleteComment(commentId, index) {
+        if (!confirm('Are you sure you want to delete this comment?')) return;
+        try {
+            await eventosService.deleteComment(commentId);
+            this.comments.splice(index, 1);
+        } catch (error) {
+            console.error('Failed to delete comment:', error);
+            alert(`Error: ${error.message}`);
+        }
     },
     toggleFavorite() {
       this.isFavorited = !this.isFavorited;
+      // TODO: Implementar chamada à API para adicionar/remover favorito
+      alert('Favorite functionality not implemented yet.');
     },
     handleJoinEvent() {
+      // TODO: Implementar chamada à API para se inscrever no evento ou lista de espera
       if (this.evento.cheio) {
-        alert("You've been added to the waitlist.");
+        alert("Waitlist functionality not implemented yet.");
       } else {
-        alert("Confirmed! You’re now registered for the event.");
+        alert("Join event functionality not implemented yet.");
       }
     },
-    addComment() {
-      const text = this.newComment.trim();
-      if (text) {
-        this.comments.push({
-          username: this.username,
-          text
-        });
-        this.newComment = '';
-      }
-    },
-    deleteComment(index) {
-      this.comments.splice(index, 1);
-    }
   }
 };
 </script>

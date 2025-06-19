@@ -10,16 +10,20 @@
             {{ error }}
         </div>
         <div v-else class="grid grid-cols-4 gap-14 max-md:grid-cols-2 max-sm:grid-cols-1">
-         <EventCard 
+         <router-link 
              v-for="event in events" 
              :key="event.eventId"
-             :image="event.image"
-             :type="event.eventType"
-             :date="formatDate(event.date)"
-             :location="event.location"
-             :author="event.authorName || 'Unknown Author'"
-             :title="event.title"
-             />
+             :to="'/event/' + event.eventId"
+             >
+             <EventCard 
+                 :image="event.image"
+                 :type="event.eventType"
+                 :date="formatDate(event.date)"
+                 :location="event.location"
+                 :author="event.authorName || 'Unknown Author'"
+                 :title="event.title"
+                 />
+         </router-link>
      </div>
  </section>
 </template>

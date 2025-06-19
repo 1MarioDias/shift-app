@@ -37,11 +37,11 @@
 
     <!-- Event List -->
     <div v-if="!mapMode" class="flex flex-col gap-6">
-      <div
+      <router-link
         v-for="event in events"
-        :key="event._id"
+        :key="event.eventId"
+        :to="'/event/' + event.eventId"
         class="cursor-pointer bg-stone-800 rounded-lg p-5 flex flex-col md:flex-row items-center justify-between gap-6 hover:bg-stone-700 transition"
-        @click="goToEvent(event._id)"
       >
         <div class="w-full md:w-98 h-40 flex-shrink-0">
           <img :src="event.image || '/defaultEvent.jpg'" alt="Image" class="w-full h-full object-cover rounded-md" />
@@ -51,7 +51,7 @@
           <p class="text-lg text-stone-300">{{ formatDate(event.date) }} - {{ event.location || 'Unknown' }}</p>
           <p class="text-lg text-stone-400 mt-5">{{ event.eventType || 'Other' }} • {{ event.time || '00:00' }}</p>
         </div>
-      </div>
+      </router-link>
     </div>
 
     <!-- Leaflet Map -->
@@ -181,7 +181,7 @@ export default {
           }).addTo(this.map);
 
           const popupContent = `
-            <div style="max-width: 200px; cursor:pointer;" onclick="window.location.href='/event/${event._id}'">
+            <div style="max-width: 200px; cursor:pointer;" onclick="window.location.href='/event/${event.eventId}'">
               <img src="${event.image || '/defaultEvent.jpg'}" alt="${event.title}" style="width: 100%; border-radius: 8px; margin-bottom: 8px;" />
               <strong>${event.title}</strong><br />
               ${this.formatDate(event.date)} - ${event.location}<br />
