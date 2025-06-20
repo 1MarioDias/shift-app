@@ -11,7 +11,7 @@ export const eventosService = {
             page: params.page || 0,
             pageSize: params.pageSize || 8,
             sortBy: params.sortBy || 'data',
-            order: params.order || 'desc',
+            order: params.order || 'asc',
             ...(params.query && { query: params.query }),
             ...(params.eventType && { eventType: params.eventType }),
             ...(params.datetime && { datetime: params.datetime }),
@@ -195,6 +195,26 @@ export const eventosService = {
             return await response.json();
         } catch (error) {
             console.error(`API Error deleting comment ${commentId}:`, error.message || error);
+            throw error;
+        }
+    },
+
+    async registerForEvent(eventId) {
+        if (!authStore.isLoggedIn()) {
+            return Promise.reject(new Error('Authentication required.'));
+        }
+        try {
+            const response = await fetch(`${API_URL}/events/${eventId}/participations`, {
+                method: 'POST',
+                headers: { ...authStore.getAuthHeaders() }
+            });
+            const responseData = await response.json();
+            if (!response.ok) {
+                throw new Error(responseData.errorMessage || 'Failed to register for the event.');
+            }
+            return responseData;
+        } catch (error) {
+            console.error(`API Error registering for event ${eventId}:`, error.message || error);
             throw error;
         }
     },

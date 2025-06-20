@@ -20,73 +20,66 @@
         <!-- Left Side -->
         <div class="space-y-6">
           <div>
-            <label for="title" class="block text-sm font-medium text-gray-300 mb-1">Event Title*</label>
+            <label for="title" class="block text-sm font-medium text-gray-300 mb-1">Event Title</label>
             <input
               id="title"
               v-model="eventForm.title"
               type="text"
-              placeholder="e.g., Summer Music Festival"
-              class="w-full bg-transparent border-b-2 placeholder-gray-500 text-xl focus:outline-none focus:border-[#426CFF] transition"
-              :class="validationErrors.title ? 'border-red-500' : 'border-gray-600'"
-              required
+              placeholder="Event Title"
+              class="w-full bg-black/20 backdrop-blur-lg border rounded-md p-3 text-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#426CFF] focus:border-transparent transition"
+              :class="validationErrors.title ? 'border-red-500' : 'border-white/10'"
             />
             <p v-if="validationErrors.title" class="text-red-400 text-xs mt-1">{{ validationErrors.title }}</p>
           </div>
           
           <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label for="eventDate" class="block text-sm font-medium text-gray-300 mb-1">Date*</label>
-              <input
-                id="eventDate"
-                v-model="eventForm.eventDate"
-                type="date"
-                class="w-full bg-transparent border-b-2 placeholder-gray-500 text-lg focus:outline-none focus:border-[#426CFF] transition"
-                :class="validationErrors.eventDate ? 'border-red-500' : 'border-gray-600'"
-                required
-              />
-              <p v-if="validationErrors.eventDate" class="text-red-400 text-xs mt-1">{{ validationErrors.eventDate }}</p>
+              <div>
+                <label for="eventDate" class="block text-sm font-medium text-gray-300 mb-1">Date</label>
+                <input
+                  id="eventDate"
+                  v-model="eventForm.eventDate"
+                  type="date"
+                  class="w-full bg-black/20 backdrop-blur-lg border rounded-md p-3 text-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#426CFF] focus:border-transparent transition"
+                  :class="validationErrors.eventDate ? 'border-red-500' : 'border-white/10'"
+                />
+                <p v-if="validationErrors.eventDate" class="text-red-400 text-xs mt-1">{{ validationErrors.eventDate }}</p>
+              </div>
+              <div>
+                <label for="eventTime" class="block text-sm font-medium text-gray-300 mb-1">Time</label>
+                <input
+                  id="eventTime"
+                  v-model="eventForm.eventTime"
+                  type="time"
+                  class="w-full bg-black/20 backdrop-blur-lg border rounded-md p-3 text-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#426CFF] focus:border-transparent transition"
+                  :class="validationErrors.eventTime ? 'border-red-500' : 'border-white/10'"
+                />
+                <p v-if="validationErrors.eventTime" class="text-red-400 text-xs mt-1">{{ validationErrors.eventTime }}</p>
+              </div>
             </div>
-            <div>
-              <label for="eventTime" class="block text-sm font-medium text-gray-300 mb-1">Time*</label>
-              <input
-                id="eventTime"
-                v-model="eventForm.eventTime"
-                type="time"
-                class="w-full bg-transparent border-b-2 placeholder-gray-500 text-lg focus:outline-none focus:border-[#426CFF] transition"
-                :class="validationErrors.eventTime ? 'border-red-500' : 'border-gray-600'"
-                required
-              />
-              <p v-if="validationErrors.eventTime" class="text-red-400 text-xs mt-1">{{ validationErrors.eventTime }}</p>
-            </div>
-          </div>
           
           <div>
-            <label for="location" class="block text-sm font-medium text-gray-300 mb-1">Location*</label>
+            <label for="location" class="block text-sm font-medium text-gray-300 mb-1">Address</label>
             <input
               id="location"
               v-model="rawAddress"
-              @blur="validateAddress"
+              @change="geocodeAddress"
               type="text"
-              placeholder="e.g., Central Park, Lisbon"
-              class="w-full bg-transparent border-b-2 placeholder-gray-500 text-lg focus:outline-none focus:border-[#426CFF] transition"
-              :class="validationErrors.location ? 'border-red-500' : 'border-gray-600'"
-              required
+              placeholder="Type an address..."
+              class="w-full bg-black/20 backdrop-blur-lg border rounded-md p-3 text-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#426CFF] focus:border-transparent transition"
+              :class="validationErrors.location ? 'border-red-500' : 'border-white/10'"
             />
             <p v-if="validationErrors.location" class="text-red-400 text-xs mt-1">{{ validationErrors.location }}</p>
           </div>
-          
+
           <div>
-            <label for="maxParticipants" class="block text-sm font-medium text-gray-300 mb-1">Max Participants (Optional, min 2 if provided)</label>
+            <label for="maxParticipants" class="block text-sm font-medium text-gray-300 mb-1">Max Participants (Optional)</label>
             <input
               id="maxParticipants"
               v-model.number="eventForm.maxParticipants"
               type="number"
-              min="2"
-              placeholder="e.g., 100"
-              class="w-full bg-transparent border-b-2 placeholder-gray-500 text-lg focus:outline-none focus:border-[#426CFF] transition"
-              :class="validationErrors.maxParticipants ? 'border-red-500' : 'border-gray-600'"
+              placeholder="e.g., 100 (optional)"
+              class="w-full bg-black/20 backdrop-blur-lg border rounded-md p-3 text-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#426CFF] focus:border-transparent transition border-white/10"
             />
-            <p v-if="validationErrors.maxParticipants" class="text-red-400 text-xs mt-1">{{ validationErrors.maxParticipants }}</p>
           </div>
           
           <div>
@@ -118,8 +111,8 @@
               v-model="eventForm.description"
               placeholder="Tell us more about your event..."
               rows="3"
-              class="w-full bg-transparent border-2 placeholder-gray-500 text-lg resize-none focus:outline-none focus:border-[#426CFF] transition p-2 rounded-md"
-              :class="validationErrors.description ? 'border-red-500' : 'border-gray-600'"
+              class="w-full bg-black/20 backdrop-blur-lg border rounded-md p-3 text-lg placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-[#426CFF] focus:border-transparent transition"
+              :class="validationErrors.description ? 'border-red-500' : 'border-white/10'"
             ></textarea>
              <p v-if="validationErrors.description" class="text-red-400 text-xs mt-1">{{ validationErrors.description }}</p>
           </div>
@@ -131,8 +124,8 @@
               v-model="eventForm.linksRelevantes"
               type="url"
               placeholder="e.g., https://example.com/tickets"
-              class="w-full bg-transparent border-b-2 placeholder-gray-500 text-lg focus:outline-none focus:border-[#426CFF] transition"
-              :class="validationErrors.linksRelevantes ? 'border-red-500' : 'border-gray-600'"
+              class="w-full bg-black/20 backdrop-blur-lg border rounded-md p-3 text-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#426CFF] focus:border-transparent transition"
+              :class="validationErrors.linksRelevantes ? 'border-red-500' : 'border-white/10'"
             />
             <p v-if="validationErrors.linksRelevantes" class="text-red-400 text-xs mt-1">{{ validationErrors.linksRelevantes }}</p>
           </div>
@@ -146,11 +139,11 @@
         <!-- Right Side -->
         <div class="space-y-6 flex flex-col">
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Event Image (Optional)</label>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Event Image</label>
             <div
-              class="w-full h-60 md:h-80 bg-gray-800 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer overflow-hidden relative group hover:border-[#426CFF] transition"
               @click="triggerFileInput"
-              :class="validationErrors.eventImageFile ? 'border-red-500 hover:border-red-700' : 'border-gray-600'"
+              class="relative w-full h-48 bg-black/20 backdrop-blur-lg border-2 border-dashed rounded-xl flex items-center justify-center cursor-pointer hover:border-white/40 transition"
+              :class="validationErrors.eventImageFile ? 'border-red-500' : 'border-white/20'"
             >
               <div v-if="!previewUrl" class="text-center p-4">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-500 mb-2 mx-auto group-hover:text-[#426CFF] transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -303,93 +296,81 @@ export default {
 
     validateForm() {
       this.validationErrors = {};
-      let valid = true;
-
-      if (!this.eventForm.title.trim() || this.eventForm.title.length < 5) {
-        this.validationErrors.title = 'Title must be at least 5 characters.';
-        valid = false;
-      }
-
-      if (!this.eventForm.eventDate) {
-        this.validationErrors.eventDate = 'Date is required.';
-        valid = false;
-      }
-
-      if (!this.eventForm.eventTime) {
-        this.validationErrors.eventTime = 'Time is required.';
-        valid = false;
-      }
-
-      const now = new Date();
-      const eventDateTime = new Date(`${this.eventForm.eventDate}T${this.eventForm.eventTime}`);
-      if (eventDateTime <= now) {
-        this.validationErrors.eventDate = 'Date must be in the future.';
-        valid = false;
-      }
-
-      if (!this.rawAddress.trim()) {
-        this.validationErrors.location = 'Address is required.';
-        valid = false;
-      }
-
-      if (!this.eventForm.eventType) {
-        this.validationErrors.eventType = 'Type is required.';
-        valid = false;
-      }
-
-      return valid;
+      if (!this.eventForm.title) this.validationErrors.title = 'Title is required.';
+      if (!this.eventForm.description) this.validationErrors.description = 'Description is required.';
+      if (!this.eventForm.eventType) this.validationErrors.eventType = 'Event type is required.';
+      if (!this.eventForm.eventDate) this.validationErrors.eventDate = 'Date is required.';
+      if (!this.eventForm.eventTime) this.validationErrors.eventTime = 'Time is required.';
+      if (!this.eventForm.location) this.validationErrors.location = 'Location is required.';
+      if (!this.eventForm.eventImageFile) this.validationErrors.eventImageFile = 'Image is required.';
+      
+      return Object.keys(this.validationErrors).length === 0;
     },
 
     async submitForm() {
       this.apiError = null;
       this.apiErrorDetails = [];
       this.successMessage = null;
-      this.createdEventId = null;
 
       if (!this.validateForm()) {
-        this.apiError = 'Please fix errors in the form.';
-        return;
-      }
-
-        await this.validateAddress();
-          if (
-            !this.eventForm.latitude ||
-            !this.eventForm.longitude ||
-            !this.eventForm.location ||
-            !this.eventForm.fullAddress
-          ) {
-            this.apiError = 'Geolocation failed. Please enter a valid address.';
-            return;
-          }
-
-      if (!authStore.isLoggedIn()) {
-        this.apiError = 'Please login.';
-        setTimeout(() => this.$router.push('/login'), 1500);
         return;
       }
 
       this.isLoading = true;
+
       const formData = new FormData();
-      for (const key in this.eventForm) {
-        if (
-          this.eventForm[key] !== null &&
-          this.eventForm[key] !== '' &&
-          this.eventForm[key] !== undefined
-        ) {
-          formData.append(key, this.eventForm[key]);
-        }
+      
+      // Append all form fields
+      formData.append('title', this.eventForm.title);
+      formData.append('description', this.eventForm.description);
+      formData.append('eventType', this.eventForm.eventType);
+      formData.append('eventDate', this.eventForm.eventDate);
+      formData.append('eventTime', this.eventForm.eventTime);
+      
+      // Send the full address in the 'location' field, as the backend expects it there.
+      formData.append('location', this.eventForm.fullAddress);
+
+      formData.append('isPublic', this.eventForm.isPublic);
+
+      if (this.eventForm.maxParticipants) {
+        formData.append('maxParticipants', this.eventForm.maxParticipants);
+      }
+      if (this.eventForm.linksRelevantes) {
+        formData.append('linksRelevantes', this.eventForm.linksRelevantes);
+      }
+      
+      // Correctly append the image file with the expected field name 'eventImage'
+      if (this.eventForm.eventImageFile) {
+        formData.append('eventImage', this.eventForm.eventImageFile);
       }
 
       try {
-        const result = await eventosService.createEvent(formData);
-        this.successMessage = result.message || 'Event created!';
-        this.createdEventId = result.eventId;
-      } catch (err) {
-        this.apiError = err.message || 'Unknown error';
-        if (err.details) this.apiErrorDetails = err.details;
+        const response = await eventosService.createEvent(formData);
+        this.successMessage = response.message + " You will be redirected shortly.";
+        this.createdEventId = response.eventId;
+        setTimeout(() => {
+          this.$router.push(`/event/${response.eventId}`);
+        }, 2000);
+      } catch (error) {
+        this.apiError = error.message || 'An unknown error occurred.';
+        if (error.details) {
+          this.apiErrorDetails = error.details;
+        }
       } finally {
         this.isLoading = false;
       }
+    },
+    async geocodeAddress() {
+      if (!this.rawAddress) {
+        this.eventForm.location = '';
+        this.eventForm.fullAddress = '';
+        this.eventForm.latitude = null;
+        this.eventForm.longitude = null;
+        return;
+      }
+      // Placeholder for actual geocoding logic
+      this.eventForm.location = this.rawAddress.split(',')[0];
+      this.eventForm.fullAddress = this.rawAddress;
     }
   }
 };

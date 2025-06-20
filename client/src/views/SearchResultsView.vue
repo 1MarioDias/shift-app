@@ -1,28 +1,25 @@
 <template>
   <div class="-mt-15 min-h-screen px-10 py-16 text-white font-sans max-w-7xl mx-auto">
     <!-- Search Filters -->
-    <div class="mb-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
       <div>
         <label class="block text-sm font-medium mb-1">Event Type</label>
-        <select v-model="filters.eventType" class="w-full bg-stone-800 border border-stone-600 rounded-md px-3 py-2">
+        <select v-model="filters.eventType" class="w-full bg-black/20 backdrop-blur-lg border border-white/10 rounded-md px-3 py-2 appearance-none">
           <option value="">All Types</option>
           <option value="Party">Party</option>
-          <option value="Concert">Concert</option>
           <option value="Festival">Festival</option>
+          <option value="Concert">Concert</option>
           <option value="Workshop">Workshop</option>
-          <option value="Meeting">Meeting</option>
-          <option value="Conference">Conference</option>
-          <option value="Exhibition">Exhibition</option>
           <option value="Other">Other</option>
         </select>
       </div>
       <div>
         <label class="block text-sm font-medium mb-1">Location</label>
-        <input v-model="filters.location" type="text" placeholder="Porto, Lisbon..." class="w-full bg-stone-800 border border-stone-600 rounded-md px-3 py-2">
+        <input v-model="filters.location" type="text" placeholder="Porto, Lisbon..." class="w-full bg-black/20 backdrop-blur-lg border border-white/10 rounded-md px-3 py-2">
       </div>
       <div>
         <label class="block text-sm font-medium mb-1">Date</label>
-        <input v-model="filters.date" type="date" class="w-full bg-stone-800 border border-stone-600 rounded-md px-3 py-2">
+        <input v-model="filters.date" type="date" class="w-full bg-black/20 backdrop-blur-lg border border-white/10 rounded-md px-3 py-2">
       </div>
     </div>
 
@@ -41,7 +38,7 @@
         v-for="event in events"
         :key="event.eventId"
         :to="'/event/' + event.eventId"
-        class="cursor-pointer bg-stone-800 rounded-lg p-5 flex flex-col md:flex-row items-center justify-between gap-6 hover:bg-stone-700 transition"
+        class="cursor-pointer bg-black/20 backdrop-blur-lg border border-white/10 rounded-lg p-5 flex flex-col md:flex-row items-center justify-between gap-6 hover:bg-black/40 transition-all duration-300"
       >
         <div class="w-full md:w-98 h-40 flex-shrink-0">
           <img :src="event.image || '/defaultEvent.jpg'" alt="Image" class="w-full h-full object-cover rounded-md" />
@@ -49,7 +46,7 @@
         <div class="flex-1">
           <h3 class="text-3xl font-semibold">{{ event.title || 'Untitled' }}</h3>
           <p class="text-lg text-stone-300">{{ formatDate(event.date) }} - {{ event.location || 'Unknown' }}</p>
-          <p class="text-lg text-stone-400 mt-5">{{ event.eventType || 'Other' }} • {{ event.time || '00:00' }}</p>
+          <p class="text-lg text-stone-400 mt-5">{{ event.eventType || 'Other' }} • {{ formatTime(event.hora) }}</p>
         </div>
       </router-link>
     </div>
@@ -141,6 +138,10 @@ export default {
       if (!date) return 'N/A';
       const d = new Date(date);
       return d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    },
+    formatTime(timeString) {
+      if (!timeString || typeof timeString !== 'string') return '';
+      return timeString.substring(0, 5);
     },
     async initializeMap() {
       if (this.map) {

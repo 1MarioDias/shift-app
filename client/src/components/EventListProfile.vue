@@ -2,7 +2,7 @@
   <div>
     <div v-if="events.length > 0" class="space-y-4">
       <div v-for="event in events" :key="event.eventId"
-        class="bg-stone-800 rounded-lg p-4 flex items-center justify-between hover:bg-stone-700 transition">
+        class="bg-black/20 backdrop-blur-lg border border-white/10 rounded-lg p-4 flex items-center justify-between hover:bg-black/40 transition-all duration-300">
         <router-link :to="'/event/' + event.eventId" class="flex items-center gap-4 flex-grow">
           <img :src="event.image || '/defaultEvent.jpg'" alt="Event" class="w-20 h-20 object-cover rounded-md">
           <div>

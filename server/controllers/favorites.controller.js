@@ -15,7 +15,7 @@ exports.listFavoriteEvents = async (req, res, next) => {
         const pageSizeNum = parseInt(pageSize, 10);
 
         if (isNaN(pageNum) || pageNum < 0) throw new ErrorHandler(400, 'Invalid page number.');
-        if (isNaN(pageSizeNum) || pageSizeNum < 1 || pageSizeNum > 50) throw new ErrorHandler(400, 'Page size must be between 1 and 50.');
+        if (isNaN(pageSizeNum) || pageSizeNum < 1 || pageSizeNum > 1000) throw new ErrorHandler(400, 'Page size must be between 1 and 1000.');
 
         const userWithFavorites = await User.findByPk(userId, {
             include: [{
@@ -54,7 +54,7 @@ exports.listFavoriteEvents = async (req, res, next) => {
         const formattedEvents = rows.map(fav => ({
             eventId: fav.event.idEvento,
             title: fav.event.titulo,
-            image: fav.event.imageUrl,
+            image: fav.event.imagem,
             description: fav.event.descricao,
             date: fav.event.data,
             time: fav.event.hora,
@@ -92,6 +92,7 @@ exports.listFavoriteEvents = async (req, res, next) => {
 
     } catch (error) {
         console.error('Error in listFavoriteEvents:', error);
+        if (error instanceof ErrorHandler) return next(error);
         next(new ErrorHandler(500, 'Internal Server Error, try again!'));
     }
 };

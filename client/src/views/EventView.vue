@@ -14,19 +14,18 @@
     <!-- Info + Buttons -->
     <div class="flex items-start justify-between mb-[15px]">
       <p class="text-base text-stone-50">{{ formattedDate }}, {{ evento.localizacao }}</p>
-      <div class="flex items-center gap-4">
+      <div v-if="isLoggedIn && !isAuthor" class="flex items-center gap-4">
         <!-- Join / Waitlist Button -->
         <button
-          @click="handleJoinEvent"
+          @click="handleParticipation"
+          :disabled="isProcessingParticipation"
           class="px-4 py-1 text-sm font-medium rounded border transition"
-          :class="evento.cheio
-            ? 'bg-transparent text-yellow-400 border-yellow-400 hover:bg-yellow-400 hover:text-black'
-            : 'bg-[#FFD300] text-black hover:bg-white'"
+          :class="participationButtonClass"
         >
-          {{ evento.cheio ? 'Join Waitlist' : 'Join Event' }}
+          {{ participationButtonText }}
         </button>
         <!-- Favorite Button -->
-        <button @click="toggleFavorite" class="p-2 rounded-full hover:bg-stone-700 transition">
+        <button @click="toggleFavorite" :disabled="isProcessingFavorite" class="p-2 rounded-full hover:bg-stone-700 transition">
           <svg
             :class="isFavorited ? 'text-red-500' : 'text-white'"
             class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -55,7 +54,7 @@
     <div class="mt-10 max-w-[1400px]">
       <h3 class="text-xl font-semibold mb-4">Comments ({{ comments.length }})</h3>
       <form @submit.prevent="addComment" class="mb-6" v-if="isLoggedIn">
-        <input v-model="newComment" placeholder="Your comment..." class="w-full p-2 rounded bg-stone-800 border border-stone-700" />
+        <input v-model="newComment" placeholder="Your comment..." class="w-full p-3 rounded-md bg-black/20 backdrop-blur-lg border border-white/10 focus:outline-none focus:ring-2 focus:ring-[#FFD300] focus:border-transparent transition" />
         <button type="submit" class="mt-2 px-4 py-1 text-sm font-medium rounded bg-[#FFD300] text-black hover:bg-white">Post Comment</button>
       </form>
       <div class="space-y-4">
@@ -85,6 +84,7 @@
 import { userStore } from '../stores/userStore';
 import { authStore } from '../stores/authStore';
 import { eventosService } from '../api/eventos';
+import { userService } from '../api/user';
 
 export default {
   name: 'EventView',
@@ -96,6 +96,10 @@ export default {
       newComment: '',
       comments: [],
       isFavorited: false,
+      userParticipationStatus: 'none', // 'none', 'attending', 'waitlisted'
+      isLoadingStatus: true,
+      isProcessingFavorite: false,
+      isProcessingParticipation: false,
     };
   },
   computed: {
@@ -111,10 +115,32 @@ export default {
     isLoggedIn() {
         return authStore.isLoggedIn();
     },
+    isAuthor() {
+        return this.isLoggedIn && this.evento && this.evento.idAutor === this.userId;
+    },
     formattedDate() {
         if (!this.evento || !this.evento.data) return '';
         const options = { year: 'numeric', month: 'long', day: 'numeric' };
         return new Date(this.evento.data + 'T00:00:00').toLocaleDateString('pt-PT', options);
+    },
+    participationButtonText() {
+        if (this.isProcessingParticipation) return 'Processing...';
+        switch (this.userParticipationStatus) {
+            case 'attending': return 'Cancel Registration';
+            case 'waitlisted': return 'Leave Waitlist';
+            default: return this.evento.cheio ? 'Join Waitlist' : 'Join Event';
+        }
+    },
+    participationButtonClass() {
+        switch (this.userParticipationStatus) {
+            case 'attending':
+            case 'waitlisted':
+                return 'bg-red-600 text-white border-red-600 hover:bg-red-700';
+            default:
+                return this.evento.cheio
+                    ? 'bg-transparent text-yellow-400 border-yellow-400 hover:bg-yellow-400 hover:text-black'
+                    : 'bg-[#FFD300] text-black hover:bg-white';
+        }
     }
   },
   async created() {
@@ -122,6 +148,9 @@ export default {
     if (eventId && !isNaN(parseInt(eventId))) {
       await this.loadEvent(eventId);
       await this.loadComments(eventId);
+      if (this.isLoggedIn) {
+          await this.loadUserStatus(eventId);
+      }
     } else {
         this.error = "Invalid or missing Event ID.";
         this.isLoading = false;
@@ -136,6 +165,7 @@ export default {
         this.evento = {
           id: response.eventId,
           titulo: response.title,
+          idAutor: response.organizer ? response.organizer.organizerId : null,
           nomeAutor: response.organizer ? response.organizer.organizerName : 'Unknown Author',
           imagem: response.image || '/images/default-event.png',
           descricao: response.description,
@@ -152,6 +182,30 @@ export default {
       } finally {
         this.isLoading = false;
       }
+    },
+    async loadUserStatus(eventId) {
+        this.isLoadingStatus = true;
+        try {
+            const [favRes, partRes, waitRes] = await Promise.all([
+                userService.getFavorites({ pageSize: 1000 }),
+                userService.getParticipations({ pageSize: 1000 }),
+                userService.getWaitlist({ pageSize: 1000 })
+            ]);
+
+            this.isFavorited = favRes.data.some(e => e.eventId === parseInt(eventId));
+            
+            if (partRes.data.some(e => e.eventId === parseInt(eventId))) {
+                this.userParticipationStatus = 'attending';
+            } else if (waitRes.data.some(e => e.eventId === parseInt(eventId))) {
+                this.userParticipationStatus = 'waitlisted';
+            } else {
+                this.userParticipationStatus = 'none';
+            }
+        } catch (error) {
+            console.error("Failed to load user's event status:", error);
+        } finally {
+            this.isLoadingStatus = false;
+        }
     },
     async loadComments(eventId) {
         try {
@@ -171,8 +225,7 @@ export default {
       if (!text || !this.evento) return;
 
       try {
-        const response = await eventosService.addCommentToEvent(this.evento.id, text);
-        const newCommentData = response.comment;
+        const newCommentData = await eventosService.addCommentToEvent(this.evento.id, text);
         this.comments.unshift({
             id: newCommentData.commentId,
             username: newCommentData.user.userName,
@@ -195,17 +248,40 @@ export default {
             alert(`Error: ${error.message}`);
         }
     },
-    toggleFavorite() {
-      this.isFavorited = !this.isFavorited;
-      // TODO: Implementar chamada à API para adicionar/remover favorito
-      alert('Favorite functionality not implemented yet.');
+    async toggleFavorite() {
+      if (!this.evento) return;
+      this.isProcessingFavorite = true;
+      try {
+        if (this.isFavorited) {
+          await userService.removeFavorite(this.evento.id);
+          this.isFavorited = false;
+        } else {
+          await userService.addFavorite(this.evento.id);
+          this.isFavorited = true;
+        }
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+      } finally {
+        this.isProcessingFavorite = false;
+      }
     },
-    handleJoinEvent() {
-      // TODO: Implementar chamada à API para se inscrever no evento ou lista de espera
-      if (this.evento.cheio) {
-        alert("Waitlist functionality not implemented yet.");
-      } else {
-        alert("Join event functionality not implemented yet.");
+    async handleParticipation() {
+      if (!this.evento) return;
+      this.isProcessingParticipation = true;
+      try {
+        if (this.userParticipationStatus === 'attending' || this.userParticipationStatus === 'waitlisted') {
+          await eventosService.cancelParticipation(this.evento.id);
+          this.userParticipationStatus = 'none';
+          alert('Your registration has been successfully cancelled.');
+        } else {
+          const response = await eventosService.registerForEvent(this.evento.id);
+          alert(response.message);
+          this.userParticipationStatus = response.participation.status === 'confirmado' ? 'attending' : 'waitlisted';
+        }
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+      } finally {
+        this.isProcessingParticipation = false;
       }
     },
   }
