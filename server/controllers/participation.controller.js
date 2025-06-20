@@ -12,6 +12,18 @@ const NOTIFICATION_TYPES = {
     EVENT_PROMOTED_FROM_WAITING_LIST: 'EVENT_PROMOTED_FROM_WAITING_LIST'
 };
 
+const formatEventFromParticipation = (p) => {
+    if (!p.event) return null;
+    return {
+        eventId: p.event.idEvento,
+        title: p.event.titulo,
+        image: p.event.imagem,
+        date: p.event.data,
+        location: p.event.localizacao,
+        registeredAt: p.dataInscricao
+    };
+};
+
 // passar da waitilingList para a lista de participantes confirmados
 async function promoteFromWaitingList(eventId, transaction) {
     const event = await Event.findByPk(eventId, { transaction });
@@ -141,6 +153,71 @@ async function promoteFromWaitingList(eventId, transaction) {
     return null;
 }
 
+// GET /users/me/participations - Lista os eventos em que o user participa
+exports.listUserParticipations = async (req, res, next) => {
+    try {
+        const userId = req.user.userId;
+        const { page = 0, pageSize = 5 } = req.query;
+        const pageNum = parseInt(page, 10);
+        const pageSizeNum = parseInt(pageSize, 10);
+
+        const { count, rows } = await EventParticipant.findAndCountAll({
+            where: { idUtilizador: userId, status: 'confirmado' },
+            include: [{
+                model: Event,
+                as: 'event',
+                attributes: ['idEvento', 'titulo', 'imagem', 'data', 'localizacao']
+            }],
+            limit: pageSizeNum,
+            offset: pageNum * pageSizeNum,
+            order: [['dataInscricao', 'DESC']]
+        });
+
+        const formattedEvents = rows.map(formatEventFromParticipation).filter(e => e);
+        const totalPages = Math.ceil(count / pageSizeNum);
+
+        res.json({
+            data: formattedEvents,
+            pagination: { currentPage: pageNum, pageSize: pageSizeNum, totalItems: count, totalPages }
+        });
+    } catch (error) {
+        console.error('Error in listUserParticipations:', error);
+        next(new ErrorHandler(500, 'Internal Server Error'));
+    }
+};
+
+// GET /users/me/waitlist - Lista os eventos em que o user está em lista de espera
+exports.listUserWaitingList = async (req, res, next) => {
+    try {
+        const userId = req.user.userId;
+        const { page = 0, pageSize = 5 } = req.query;
+        const pageNum = parseInt(page, 10);
+        const pageSizeNum = parseInt(pageSize, 10);
+
+        const { count, rows } = await WaitingList.findAndCountAll({
+            where: { idUtilizador: userId },
+            include: [{
+                model: Event,
+                as: 'event',
+                attributes: ['idEvento', 'titulo', 'imagem', 'data', 'localizacao']
+            }],
+            limit: pageSizeNum,
+            offset: pageNum * pageSizeNum,
+            order: [['dataInscricao', 'DESC']]
+        });
+
+        const formattedEvents = rows.map(formatEventFromParticipation).filter(e => e);
+        const totalPages = Math.ceil(count / pageSizeNum);
+
+        res.json({
+            data: formattedEvents,
+            pagination: { currentPage: pageNum, pageSize: pageSizeNum, totalItems: count, totalPages }
+        });
+    } catch (error) {
+        console.error('Error in listUserWaitingList:', error);
+        next(new ErrorHandler(500, 'Internal Server Error'));
+    }
+};
 
 // POST /events/:eventId/participations - Participar num evento
 exports.registerForEvent = async (req, res, next) => {

@@ -11,7 +11,7 @@ export const eventosService = {
             page: params.page || 0,
             pageSize: params.pageSize || 8,
             sortBy: params.sortBy || 'data',
-            order: params.order || 'desc',
+            order: params.order || 'asc',
             ...(params.query && { query: params.query }),
             ...(params.eventType && { eventType: params.eventType }),
             ...(params.datetime && { datetime: params.datetime }),
@@ -116,6 +116,129 @@ export const eventosService = {
         }
     },
 
+    async getCommentsForEvent(eventId, page = 0, pageSize = 10) {
+        try {
+            const response = await fetch(`${API_URL}/events/${eventId}/comments?page=${page}&pageSize=${pageSize}`, {
+                headers: {
+                    ...authStore.getAuthHeaders()
+                }
+            });
+            if (!response.ok) {
+                let errorPayload = { message: `Error fetching comments for event ${eventId}. Status: ${response.status}` };
+                try {
+                    const errorData = await response.json();
+                    errorPayload.message = errorData.errorMessage || errorData.error || errorPayload.message;
+                } catch (e) {
+                    // Ignore if error response is not JSON
+                }
+                throw new Error(errorPayload.message);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error(`API Error fetching comments for event ${eventId}:`, error.message || error);
+            throw error;
+        }
+    },
+
+    async addCommentToEvent(eventId, text) {
+        if (!authStore.isLoggedIn()) {
+            return Promise.reject(new Error('Authentication required to comment.'));
+        }
+        try {
+            const response = await fetch(`${API_URL}/events/${eventId}/comments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...authStore.getAuthHeaders()
+                },
+                body: JSON.stringify({ text })
+            });
+
+            const responseData = await response.json();
+            if (!response.ok) {
+                const message = responseData.errorMessage || responseData.message || `Error adding comment. Status: ${response.status}`;
+                throw new Error(message);
+            }
+            return responseData;
+        } catch (error) {
+            console.error(`API Error adding comment to event ${eventId}:`, error.message || error);
+            throw error;
+        }
+    },
+
+    async deleteComment(commentId) {
+        if (!authStore.isLoggedIn()) {
+            return Promise.reject(new Error('Authentication required to delete a comment.'));
+        }
+        try {
+            const response = await fetch(`${API_URL}/comments/${commentId}`, {
+                method: 'DELETE',
+                headers: {
+                    ...authStore.getAuthHeaders()
+                }
+            });
+
+            if (response.status === 204) {
+                return { success: true };
+            }
+
+            if (!response.ok) {
+                let errorPayload = { message: `Error deleting comment ${commentId}. Status: ${response.status}` };
+                try {
+                    const errorData = await response.json();
+                    errorPayload.message = errorData.errorMessage || errorData.error || errorPayload.message;
+                } catch (e) {
+                    // Ignore
+                }
+                throw new Error(errorPayload.message);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error(`API Error deleting comment ${commentId}:`, error.message || error);
+            throw error;
+        }
+    },
+
+    async registerForEvent(eventId) {
+        if (!authStore.isLoggedIn()) {
+            return Promise.reject(new Error('Authentication required.'));
+        }
+        try {
+            const response = await fetch(`${API_URL}/events/${eventId}/participations`, {
+                method: 'POST',
+                headers: { ...authStore.getAuthHeaders() }
+            });
+            const responseData = await response.json();
+            if (!response.ok) {
+                throw new Error(responseData.errorMessage || 'Failed to register for the event.');
+            }
+            return responseData;
+        } catch (error) {
+            console.error(`API Error registering for event ${eventId}:`, error.message || error);
+            throw error;
+        }
+    },
+
+    async cancelParticipation(eventId) {
+        if (!authStore.isLoggedIn()) {
+            return Promise.reject(new Error('Authentication required.'));
+        }
+        try {
+            const response = await fetch(`${API_URL}/events/${eventId}/participations`, {
+                method: 'DELETE',
+                headers: { ...authStore.getAuthHeaders() }
+            });
+            if (response.status !== 204) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.errorMessage || 'Failed to cancel participation.');
+            }
+            return { success: true };
+        } catch (error) {
+            console.error(`API Error canceling participation for event ${eventId}:`, error.message || error);
+            throw error;
+        }
+    },
+
     /*
     Update campos específicos dum evento
     AUTH para admin OU criador do evento.
@@ -160,9 +283,9 @@ export const eventosService = {
     Apaga um evento
     No backend DELETE /events/:eventId já faz a lógica de autenticação
     */
-    async deleteAdminEvent(eventId) {
-        if (!authStore.isAdmin()) {
-            return Promise.reject(new Error('Administrator privileges required.'));
+    async deleteEvent(eventId) {
+        if (!authStore.isLoggedIn()) {
+            return Promise.reject(new Error('Authentication required.'));
         }
         try {
             const response = await fetch(`${API_URL}/events/${eventId}`, {
@@ -171,28 +294,20 @@ export const eventosService = {
             });
 
             if (response.status === 204) {
-                return true;
+                return { success: true };
             }
 
-            if (!response.ok) {
-                let errorPayload = { message: `Error deleting event ${eventId}. Status: ${response.status}` };
-                try {
-                    const errorData = await response.json();
-                    errorPayload.message = errorData.errorMessage || errorData.error || errorPayload.message;
-                } catch (e) {
-                    console.warn(`Could not parse error response JSON for DELETE event ${eventId}.`, e);
-                    if(response.statusText) errorPayload.message = response.statusText;
-                }
-                throw new Error(errorPayload.message);
+            let errorPayload = { message: `Error deleting event ${eventId}. Status: ${response.status}` };
+            try {
+                const errorData = await response.json();
+                errorPayload.message = errorData.errorMessage || errorData.error || errorPayload.message;
+            } catch (e) {
+                // Ignorar se não houver corpo JSON
             }
-            return await response.json();
+            throw new Error(errorPayload.message);
         } catch (error) {
             console.error(`API Error deleting event ${eventId}:`, error.message || error);
-            if (error instanceof Error) {
-                throw error;
-            } else {
-                throw new Error(String(error) || `An unknown error occurred while deleting event ${eventId}.`);
-            }
+            throw error;
         }
     },
     async createEvent(eventFormData) {

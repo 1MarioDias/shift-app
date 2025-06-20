@@ -2,6 +2,8 @@
   <div>
     <AdminTable
       :columns="columns"
+      :items="comments"
+      :loading="loading"
       :currentPage="currentPage"
       :totalPages="totalPages"
       :totalItems="totalItems"
@@ -18,7 +20,7 @@
           class="border-b border-stone-700 hover:bg-white hover:bg-opacity-5"
         >
           <td class="py-3 px-4 max-w-md">
-            <div class="truncate">{{ comment.conteudo }}</div>
+            <div class="truncate" :title="comment.conteudo">{{ comment.conteudo }}</div>
           </td>
           <td class="py-3 px-4">{{ comment.userName }}</td>
           <td class="py-3 px-4">{{ comment.eventTitle }}</td>
@@ -36,11 +38,13 @@
         </tr>
       </template>
     </AdminTable>
+    <div v-if="error" class="text-red-500 p-4">{{ error }}</div>
   </div>
 </template>
 
 <script>
 import AdminTable from './AdminTable.vue';
+import { adminService } from '../../api/adminService';
 
 export default {
   name: 'AdminCommentsTable',
@@ -49,63 +53,86 @@ export default {
   },
   data() {
     return {
+      loading: true,
+      error: null,
       columns: [
         { key: 'conteudo', label: 'Comment', sortable: true },
         { key: 'userName', label: 'User', sortable: true },
         { key: 'eventTitle', label: 'Event', sortable: true },
         { key: 'dataComentario', label: 'Date', sortable: true }
       ],
-      comments: [
-        {
-          idComentario: 1,
-          conteudo: 'Great event! Looking forward to the next one.',
-          userName: 'John Doe',
-          eventTitle: 'Summer Festival',
-          dataComentario: '2025-06-11T10:30:00Z'
-        },
-        {
-          idComentario: 2,
-          conteudo: 'The venue was perfect for this type of event.',
-          userName: 'Jane Smith',
-          eventTitle: 'Tech Conference',
-          dataComentario: '2025-06-12T15:45:00Z'
-        },
-        {
-          idComentario: 3,
-          conteudo: 'Amazing organization and great crowd!',
-          userName: 'Mike Johnson',
-          eventTitle: 'Music Concert',
-          dataComentario: '2025-06-13T20:00:00Z'
-        }
-      ],
+      comments: [],
       currentPage: 0,
-      totalPages: 1,
-      totalItems: 3,
-      pageSize: 10
+      totalPages: 0,
+      totalItems: 0,
+      pageSize: 10,
+      searchQuery: '',
+      sortBy: 'dataComentario',
+      sortOrder: 'desc'
     }
   },
   methods: {
+    async fetchComments() {
+      this.loading = true;
+      this.error = null;
+      try {
+        const params = {
+          page: this.currentPage,
+          pageSize: this.pageSize,
+          query: this.searchQuery,
+          sortBy: this.sortBy,
+          order: this.sortOrder
+        };
+        const response = await adminService.getComments(params);
+        this.comments = response.data.map(c => ({
+          idComentario: c.commentId,
+          conteudo: c.text,
+          userName: c.user.userName,
+          eventTitle: c.eventTitle,
+          dataComentario: c.date
+        }));
+        this.totalItems = response.pagination.totalItems;
+        this.totalPages = response.pagination.totalPages;
+      } catch (err) {
+        this.error = err.message || 'Failed to fetch comments.';
+        console.error(err);
+      } finally {
+        this.loading = false;
+      }
+    },
     formatDate(date) {
-      return new Date(date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+      return new Date(date).toLocaleString('pt-PT');
     },
     handleSearch(query) {
-      console.log('Search:', query);
+      this.searchQuery = query;
+      this.currentPage = 0;
+      this.fetchComments();
     },
     handleSort({ key, order }) {
-      console.log('Sort:', key, order);
+      this.sortBy = key;
+      this.sortOrder = order;
+      this.fetchComments();
     },
     handlePageChange(page) {
       this.currentPage = page;
+      this.fetchComments();
     },
-    handleDelete(commentId) {
-      console.log('Delete comment:', commentId);
+    async handleDelete(commentId) {
+      if (confirm('Are you sure you want to permanently delete this comment?')) {
+        try {
+          await adminService.deleteComment(commentId);
+          alert('Comment deleted successfully.');
+          // Refresh a lista de comentários
+          this.fetchComments();
+        } catch (err) {
+          this.error = err.message || 'Failed to delete comment.';
+          alert(this.error);
+        }
+      }
     }
+  },
+  mounted() {
+    this.fetchComments();
   }
 }
 </script>

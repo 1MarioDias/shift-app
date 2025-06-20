@@ -10,16 +10,24 @@
             {{ error }}
         </div>
         <div v-else class="grid grid-cols-4 gap-14 max-md:grid-cols-2 max-sm:grid-cols-1">
-         <EventCard 
+         <router-link 
              v-for="event in events" 
              :key="event.eventId"
-             :image="event.image"
-             :type="event.eventType"
-             :date="formatDate(event.date)"
-             :location="event.location"
-             :author="event.authorName || 'Unknown Author'"
-             :title="event.title"
-             />
+             :to="'/event/' + event.eventId"
+             >
+             <EventCard 
+                 :image="event.image"
+                 :type="event.eventType"
+                 :date="formatDate(event.date)"
+                 :location="event.location"
+                 :author="event.authorName || 'Unknown Author'"
+                 :title="event.title"
+                 :is-logged-in="isLoggedIn"
+                 :is-favorited="favoriteEventIds.has(event.eventId)"
+                 :is-processing="isProcessingFavorite === event.eventId"
+                 @toggle-favorite="handleToggleFavorite(event)"
+                 />
+         </router-link>
      </div>
  </section>
 </template>
@@ -27,6 +35,8 @@
 <script>
 import EventCard from "./EventCard.vue";
 import { eventosService } from "../api/eventos";
+import { userService } from '../api/user';
+import { authStore } from '../stores/authStore';
 
 export default {
     name: "FeaturedEvents",
@@ -37,15 +47,21 @@ export default {
         return {
             events: [],
             loading: true,
-            error: null
+            error: null,
+            favoriteEventIds: new Set(),
+            isProcessingFavorite: null,
         };
+    },
+    computed: {
+        isLoggedIn() {
+            return authStore.isLoggedIn();
+        }
     },
     methods: {
         formatDate(dateStr) {
             if (!dateStr) return 'N/A';
             return new Date(dateStr).toLocaleDateString('en-US', { 
                 weekday: 'short', 
-                year: 'numeric',
                 month: 'short',
                 day: 'numeric',
             });
@@ -59,18 +75,48 @@ export default {
                     this.events = response.data; 
                 } else {
                     this.events = []; // Ensure events is an array
-                    this.error = 'Featured events data is not in the expected format.';
+                }
+                if (this.isLoggedIn) {
+                    await this.fetchUserFavorites();
                 }
             } catch (err) {
-                this.error = err.message || 'Failed to fetch featured events.';
-                console.error("Error in FeaturedEvents fetchEvents:", err);
-                this.events = []; // Ensure events is an array on error
+                this.error = 'Failed to load events.';
+                console.error(err);
             } finally {
                 this.loading = false;
             }
+        },
+        async fetchUserFavorites() {
+            try {
+                const response = await userService.getFavorites({ pageSize: 1000 });
+                this.favoriteEventIds = new Set(response.data.map(fav => fav.eventId));
+            } catch (error) {
+                console.error('Could not fetch user favorites:', error);
+            }
+        },
+        async handleToggleFavorite(event) {
+            if (!this.isLoggedIn) return;
+
+            this.isProcessingFavorite = event.eventId;
+            const isCurrentlyFavorited = this.favoriteEventIds.has(event.eventId);
+
+            try {
+                if (isCurrentlyFavorited) {
+                    await userService.removeFavorite(event.eventId);
+                    this.favoriteEventIds.delete(event.eventId);
+                } else {
+                    await userService.addFavorite(event.eventId);
+                    this.favoriteEventIds.add(event.eventId);
+                }
+            } catch (error) {
+                console.error('Failed to toggle favorite:', error);
+                alert(`Error: ${error.message}`);
+            } finally {
+                this.isProcessingFavorite = null;
+            }
         }
     },
-    mounted() {
+    created() {
         this.fetchEvents();
     }
 };

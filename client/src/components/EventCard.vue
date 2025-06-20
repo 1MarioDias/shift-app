@@ -9,7 +9,13 @@
             <div class="flex justify-between">
                 <h3 class="text-xs font-bold text-stone-50">{{ type }}</h3>
                 <div class="flex gap-3">
-                    <button class="text-stone-50">
+                    <button
+                        v-if="isLoggedIn"
+                        @click.prevent="$emit('toggle-favorite')"
+                        :disabled="isProcessing"
+                        :class="[isFavorited ? 'text-red-500' : 'text-stone-50', 'disabled:opacity-50']"
+                        title="Toggle Favorite"
+                    >
                         <div v-html="heartIcon"></div>
                     </button>
                     <button class="text-stone-50">
@@ -58,13 +64,24 @@
       title: {
         type: String,
         required: true
+      },
+      isFavorited: {
+        type: Boolean,
+        default: false
+      },
+      isLoggedIn: {
+        type: Boolean,
+        default: false
+      },
+      isProcessing: {
+        type: Boolean,
+        default: false
       }
     },
+    emits: ['toggle-favorite'],
     data() {
       return {
-        heartIcon: `<svg width="21" height="22" viewBox="0 0 21 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M19.2305 3.98154C17.1519 1.90811 13.7885 1.904 11.7048 3.97236L10.5032 5.08853L9.3007 3.96868C6.39628 1.0724 1.4457 2.40635 0.389653 6.36979C-0.100467 8.20923 0.427986 10.1704 1.77593 11.5146L9.98418 19.8432C10.2721 20.1355 10.7436 20.1355 11.0315 19.8432L19.2305 11.5146C21.3099 9.43403 21.3099 6.06209 19.2305 3.98154ZM18.1879 10.482L10.5032 18.2759L2.81402 10.4747C0.713669 8.37431 1.67465 4.7879 4.54377 4.01912C5.87534 3.66233 7.2961 4.04302 8.27088 5.0178L8.28925 5.03617L10.0026 6.63005C10.2847 6.89262 10.7218 6.89262 11.0039 6.63005L12.7172 5.03617L12.7356 5.0178C14.8373 2.91886 18.4231 3.88225 19.19 6.7519C19.5458 8.08371 19.1642 9.50422 18.1888 10.4783L18.1879 10.482Z" fill="currentColor"/>
-        </svg>`,
+        heartIcon: `<svg width="21" height="22" viewBox="0 0 21 22" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_1_276)"><path d="M19.2305 3.98154C17.1519 1.90811 13.7885 1.904 11.7048 3.97236L10.5032 5.08853L9.3007 3.96868C6.39628 1.0724 1.4457 2.40635 0.389653 6.36979C-0.100467 8.20923 0.427986 10.1704 1.77593 11.5146L9.98418 19.8432C10.2721 20.1355 10.7436 20.1355 11.0315 19.8432L19.2305 11.5146C21.3099 9.43403 21.3099 6.06209 19.2305 3.98154ZM18.1879 10.482L10.5032 18.2759L2.81402 10.474C1.75064 9.41428 1.2699 8.01933 1.43225 6.6348C2.18965 3.80498 5.53861 2.89932 7.88613 5.03132L10.5032 7.44143L13.1157 5.035L18.1879 10.482Z" fill="currentColor"/></g><defs><clipPath id="clip0_1_276"><rect width="21" height="21" fill="white" transform="translate(0 0.5)"/></clipPath></defs></svg>`,
         shareIcon: `<svg width="24" height="24" viewBox="0 0 38 41" fill="none" xmlns="http://www.w3.org/2000/svg">
           <g filter="url(#filter0_d_1_282)">
             <path d="M11.6585 18.6403V26.0793C11.6585 26.5725 11.8545 27.0456 12.2032 27.3943C12.552 27.7431 13.0251 27.939 13.5183 27.939H24.6768C25.1701 27.939 25.6431 27.7431 25.9919 27.3943C26.3406 27.0456 26.5366 26.5725 26.5366 26.0793V18.6403" stroke="currentColor" stroke-width="1.4878" stroke-linecap="round" stroke-linejoin="round"/>

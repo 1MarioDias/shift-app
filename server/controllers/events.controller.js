@@ -264,6 +264,7 @@ exports.getEventById = async (req, res, next) => {
 
         res.status(200).json({
             eventId: event.idEvento,
+            idAutor: event.idAutor,
             title: event.titulo,
             image: event.imagem,
             description: event.descricao,

@@ -45,6 +45,7 @@
     <!-- Botões -->
     <div class="flex gap-5 items-center">
       <template v-if="isUserLoggedIn">
+        <NotificationsDropdown />
         <div class="relative">
           <button
             @click="toggleProfileDropdown"
@@ -98,6 +99,7 @@
 <script>
 import { RouterLink, RouterView } from 'vue-router';
 import SearchBar from './SearchBar.vue';
+import NotificationsDropdown from './NotificationsDropdown.vue';
 import { userStore } from '../stores/userStore';
 import { authStore } from '../stores/authStore';
 import { authService } from '../api/auth';
@@ -108,6 +110,7 @@ export default {
     SearchBar,
     RouterLink,
     RouterView,
+    NotificationsDropdown,
   },
   data() {
     return {
@@ -154,7 +157,7 @@ export default {
       }
     },
     goToSearch(value) {
-      const searchValue = value || this.searchText.trim();
+      const searchValue = typeof value === 'string' ? value : this.searchText?.trim();
       this.$router.push({
         path: '/search',
         query: searchValue ? { location: searchValue } : {}

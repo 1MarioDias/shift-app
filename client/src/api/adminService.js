@@ -49,7 +49,10 @@ export const adminService = {
     async deleteComment(commentId) {
         if (!authStore.isAdmin()) return Promise.reject(new Error('Administrator privileges required.'));
         const response = await fetch(`${API_URL}/comments/${commentId}`, { method: 'DELETE', headers: authStore.getAuthHeaders() });
-         if (!response.ok && response.status !== 204) {
+         if (response.status === 204) {
+            return { success: true };
+         }
+         if (!response.ok) {
             const data = await response.json().catch(() => ({}));
             throw new Error(data.errorMessage || data.error || 'Error deleting comment.');
         }
