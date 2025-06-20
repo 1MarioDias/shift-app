@@ -27,7 +27,7 @@ describe('Serviço de Administração', () => {
   it('deleteUser: deve apagar um utilizador', async () => {
     authStore.isAdmin.mockReturnValue(true);
     fetch.mockResolvedValueOnce({ ok: true, status: 204 });
-    await adminService.deleteUser(2); // Apagar o utilizador com ID 2
+    await adminService.deleteUser(2);
     expect(fetch).toHaveBeenCalledWith('http://127.0.0.1:3000/users/2', expect.objectContaining({ method: 'DELETE' }));
   });
 
@@ -41,7 +41,7 @@ describe('Serviço de Administração', () => {
   it('deleteComment: deve apagar qualquer comentário', async () => {
     authStore.isAdmin.mockReturnValue(true);
     fetch.mockResolvedValueOnce({ ok: true, status: 204 });
-    await adminService.deleteComment(5); // Apagar o comentário com ID 5
+    await adminService.deleteComment(5);
     expect(fetch).toHaveBeenCalledWith('http://127.0.0.1:3000/comments/5', expect.objectContaining({ method: 'DELETE' }));
   });
 });

@@ -13,7 +13,7 @@ describe('Serviço de Eventos', () => {
     authStore.getAuthHeaders.mockClear();
   });
 
-  // --- Testes de Gestão de Eventos ---
+  // Testes de Gestão de Eventos
   describe('Gestão de Eventos', () => {
     it('getPublicEvents: deve ir buscar eventos públicos', async () => {
       const resposta = { data: [{ id: 1, titulo: 'Evento Público' }] };
@@ -63,7 +63,7 @@ describe('Serviço de Eventos', () => {
     });
   });
 
-  // --- Testes de Comentários ---
+  // Testes de Comentários
   describe('Gestão de Comentários', () => {
     it('getCommentsForEvent: deve ir buscar os comentários de um evento', async () => {
       fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
@@ -86,7 +86,7 @@ describe('Serviço de Eventos', () => {
     });
   });
 
-  // --- Testes de Participações ---
+  // Testes de Participações
   describe('Gestão de Participações', () => {
     it('registerForEvent: deve registar um utilizador num evento', async () => {
       authStore.isLoggedIn.mockReturnValue(true);

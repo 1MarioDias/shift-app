@@ -82,3 +82,12 @@ app.use((err, req, res, next) => {
 app.listen(port, host, () => {
     console.log(`App listening at http://${host}:${port}/`);
 });
+
+module.exports = app;
+
+// Altere a chamada do listen para só correr quando não está em modo de teste
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(port, host, () => {
+        console.log(`App listening at http://${host}:${port}/`);
+    });
+}
