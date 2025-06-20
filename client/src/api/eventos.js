@@ -283,9 +283,9 @@ export const eventosService = {
     Apaga um evento
     No backend DELETE /events/:eventId já faz a lógica de autenticação
     */
-    async deleteAdminEvent(eventId) {
-        if (!authStore.isAdmin()) {
-            return Promise.reject(new Error('Administrator privileges required.'));
+    async deleteEvent(eventId) {
+        if (!authStore.isLoggedIn()) {
+            return Promise.reject(new Error('Authentication required.'));
         }
         try {
             const response = await fetch(`${API_URL}/events/${eventId}`, {
@@ -294,28 +294,20 @@ export const eventosService = {
             });
 
             if (response.status === 204) {
-                return true;
+                return { success: true };
             }
 
-            if (!response.ok) {
-                let errorPayload = { message: `Error deleting event ${eventId}. Status: ${response.status}` };
-                try {
-                    const errorData = await response.json();
-                    errorPayload.message = errorData.errorMessage || errorData.error || errorPayload.message;
-                } catch (e) {
-                    console.warn(`Could not parse error response JSON for DELETE event ${eventId}.`, e);
-                    if(response.statusText) errorPayload.message = response.statusText;
-                }
-                throw new Error(errorPayload.message);
+            let errorPayload = { message: `Error deleting event ${eventId}. Status: ${response.status}` };
+            try {
+                const errorData = await response.json();
+                errorPayload.message = errorData.errorMessage || errorData.error || errorPayload.message;
+            } catch (e) {
+                // Ignorar se não houver corpo JSON
             }
-            return await response.json();
+            throw new Error(errorPayload.message);
         } catch (error) {
             console.error(`API Error deleting event ${eventId}:`, error.message || error);
-            if (error instanceof Error) {
-                throw error;
-            } else {
-                throw new Error(String(error) || `An unknown error occurred while deleting event ${eventId}.`);
-            }
+            throw error;
         }
     },
     async createEvent(eventFormData) {

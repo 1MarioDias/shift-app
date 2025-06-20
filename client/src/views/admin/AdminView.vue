@@ -27,7 +27,6 @@
       <AdminEventsTable v-if="activeTab === 'events'" />
       <AdminUsersTable v-if="activeTab === 'users'" />
       <AdminCommentsTable v-if="activeTab === 'comments'" />
-      <AdminReportsTable v-if="activeTab === 'reports'" />
     </div>
   </div>
 </template>
@@ -36,8 +35,6 @@
 import AdminEventsTable from '../../components/admin/AdminEventsTable.vue';
 import AdminUsersTable from '../../components/admin/AdminUsersTable.vue';
 import AdminCommentsTable from '../../components/admin/AdminCommentsTable.vue';
-import AdminReportsTable from '../../components/admin/AdminReportsTable.vue';
-
 
 export default {
   name: 'AdminView',
@@ -45,7 +42,6 @@ export default {
     AdminEventsTable,
     AdminUsersTable,
     AdminCommentsTable,
-    AdminReportsTable
   },
   data() {
     return {
@@ -54,7 +50,6 @@ export default {
         { id: 'events', name: 'Events' },
         { id: 'users', name: 'Users' },
         { id: 'comments', name: 'Comments' },
-        { id: 'reports', name: 'Reports' }
       ]
     }
   }

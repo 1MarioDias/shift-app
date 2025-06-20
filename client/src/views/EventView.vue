@@ -1,4 +1,5 @@
 <template>
+  <div>
   <div v-if="isLoading" class="flex justify-center items-center h-screen">
     <p class="text-white text-2xl">Loading Event...</p>
   </div>
@@ -14,24 +15,39 @@
     <!-- Info + Buttons -->
     <div class="flex items-start justify-between mb-[15px]">
       <p class="text-base text-stone-50">{{ formattedDate }}, {{ evento.localizacao }}</p>
-      <div v-if="isLoggedIn && !isAuthor" class="flex items-center gap-4">
-        <!-- Join / Waitlist Button -->
-        <button
-          @click="handleParticipation"
-          :disabled="isProcessingParticipation"
-          class="px-4 py-1 text-sm font-medium rounded border transition"
-          :class="participationButtonClass"
-        >
-          {{ participationButtonText }}
-        </button>
-        <!-- Favorite Button -->
-        <button @click="toggleFavorite" :disabled="isProcessingFavorite" class="p-2 rounded-full hover:bg-stone-700 transition">
-          <svg
-            :class="isFavorited ? 'text-red-500' : 'text-white'"
-            class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
-          </svg>
-        </button>
+      <div class="flex items-center gap-4">
+        <!-- Join / Favorite Buttons -->
+        <div v-if="isLoggedIn" class="flex items-center gap-4">
+          <button
+            @click="handleParticipation"
+            :disabled="isProcessingParticipation"
+            class="px-4 py-1 text-sm font-medium rounded border transition"
+            :class="participationButtonClass"
+          >
+            {{ participationButtonText }}
+          </button>
+          <button @click="toggleFavorite" :disabled="isProcessingFavorite" class="p-2 rounded-full hover:bg-stone-700 transition">
+            <svg
+              :class="isFavorited ? 'text-red-500' : 'text-white'"
+              class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+        <!-- Admin/Owner Buttons -->
+        <div v-if="canManageEvent" class="flex items-center gap-4">
+          <button @click="openEditModal" class="px-4 py-1 text-sm font-medium rounded border border-stone-500 text-stone-300 hover:bg-stone-700 transition">
+            Edit Event
+          </button>
+          <button
+            @click="handleDeleteEvent"
+            :disabled="isProcessingDelete"
+            class="px-4 py-1 text-sm font-medium rounded bg-red-800 text-white hover:bg-red-700 transition disabled:opacity-50"
+          >
+            <span v-if="isProcessingDelete">Deleting...</span>
+            <span v-else>Delete</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -78,6 +94,68 @@
       </div>
     </div>
   </div>
+  <!-- Edit Event Modal -->
+  <div v-if="isEditModalVisible" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+    <div class="bg-stone-900/70 border border-stone-700 rounded-xl p-8 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-3xl font-bold text-[#FFD300]">Edit Event</h2>
+      </div>
+      <form @submit.prevent="handleUpdateEvent" class="space-y-5">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Title</label>
+          <input type="text" v-model="editableEventData.title" class="w-full bg-black/20 backdrop-blur-lg border rounded-md p-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FFD300] border-white/10" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Description</label>
+          <textarea v-model="editableEventData.description" rows="4" class="w-full bg-black/20 backdrop-blur-lg border rounded-md p-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FFD300] border-white/10"></textarea>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Location</label>
+            <input type="text" v-model="editableEventData.location" class="w-full bg-black/20 backdrop-blur-lg border rounded-md p-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FFD300] border-white/10" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Event Type</label>
+            <select v-model="editableEventData.eventType" class="w-full bg-black/20 backdrop-blur-lg border rounded-md p-3 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-[#FFD300] border-white/10">
+              <option class="text-black">Party</option>
+              <option class="text-black">Festival</option>
+              <option class="text-black">Concert</option>
+              <option class="text-black">Workshop</option>
+              <option class="text-black">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Date</label>
+            <input type="date" v-model="editableEventData.eventDate" class="w-full bg-black/20 backdrop-blur-lg border rounded-md p-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FFD300] border-white/10" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Time</label>
+            <input type="time" v-model="editableEventData.eventTime" class="w-full bg-black/20 backdrop-blur-lg border rounded-md p-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FFD300] border-white/10" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Relevant Link (Optional)</label>
+          <input type="url" v-model="editableEventData.linksRelevantes" placeholder="https://example.com" class="w-full bg-black/20 backdrop-blur-lg border rounded-md p-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FFD300] border-white/10" />
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 items-center">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Max Participants (Optional)</label>
+            <input type="number" v-model.number="editableEventData.maxParticipants" placeholder="Leave empty for unlimited" class="w-full bg-black/20 backdrop-blur-lg border rounded-md p-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FFD300] border-white/10" />
+          </div>
+        </div>
+        <div class="mt-6 flex justify-end gap-4">
+          <button type="button" @click="closeEditModal" class="px-4 py-2 rounded border border-stone-600 hover:bg-stone-700 transition">Cancel</button>
+          <button type="submit" :disabled="isProcessingUpdate" class="px-4 py-2 rounded bg-[#FFD300] text-black hover:bg-white transition disabled:opacity-50">
+            <span v-if="isProcessingUpdate">Saving...</span>
+            <span v-else>Save Changes</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  </div>
 </template>
 
 <script>
@@ -100,23 +178,37 @@ export default {
       isLoadingStatus: true,
       isProcessingFavorite: false,
       isProcessingParticipation: false,
+      isProcessingDelete: false,
+      isProcessingUpdate: false,
+      isEditModalVisible: false,
+      editableEventData: {},
+      currentUser: null,
     };
   },
   computed: {
     profileImage() {
       return userStore.profileImage || '/defaultProfile.svg';
     },
-    username() {
-      return userStore.username || 'User';
-    },
     userId() {
-        return userStore.userId;
+        // Corrigido: Usa os dados do utilizador obtidos via API.
+        return this.currentUser ? this.currentUser.userId : null;
     },
     isLoggedIn() {
         return authStore.isLoggedIn();
     },
+    isAdmin() {
+        // Corrigido: Usa os dados do utilizador obtidos via API.
+        return this.currentUser ? this.currentUser.role === 'Administrador' : false;
+    },
     isAuthor() {
-        return this.isLoggedIn && this.evento && this.evento.idAutor === this.userId;
+        // Esta verificação agora funcionará corretamente.
+        if (!this.isLoggedIn || !this.evento || this.evento.idAutor == null || this.userId == null) {
+            return false;
+        }
+        return String(this.evento.idAutor) === String(this.userId);
+    },
+    canManageEvent() {
+        return this.isAuthor || this.isAdmin;
     },
     formattedDate() {
         if (!this.evento || !this.evento.data) return '';
@@ -175,6 +267,8 @@ export default {
           tipoEvento: response.eventType,
           linksRelevantes: response.linksRelevantes,
           cheio: response.maxParticipants !== null && response.currentParticipants >= response.maxParticipants,
+          maxParticipants: response.maxParticipants,
+          isPublic: response.isPublic
         };
       } catch (err) {
         this.error = err.message || 'Failed to load event details.';
@@ -248,6 +342,11 @@ export default {
             alert(`Error: ${error.message}`);
         }
     },
+    canDeleteComment(comment) {
+      if (!this.isLoggedIn) return false;
+      // Esta verificação agora funcionará corretamente.
+      return this.isAdmin || (comment.user && String(comment.user.userId) === String(this.userId));
+    },
     async toggleFavorite() {
       if (!this.evento) return;
       this.isProcessingFavorite = true;
@@ -284,6 +383,102 @@ export default {
         this.isProcessingParticipation = false;
       }
     },
-  }
+    async handleDeleteEvent() {
+      if (!confirm('Are you sure you want to permanently delete this event? This action cannot be undone.')) {
+        return;
+      }
+      this.isProcessingDelete = true;
+      try {
+        await eventosService.deleteEvent(this.evento.id);
+        alert('Event deleted successfully.');
+        this.$router.push('/');
+      } catch (error) {
+        alert(`Error deleting event: ${error.message}`);
+        console.error(error);
+      } finally {
+        this.isProcessingDelete = false;
+      }
+    },
+    openEditModal() {
+      this.editableEventData = {
+        title: this.evento.titulo,
+        description: this.evento.descricao,
+        location: this.evento.localizacao,
+        eventType: this.evento.tipoEvento,
+        eventDate: this.evento.data,
+        eventTime: this.evento.hora,
+        maxParticipants: this.evento.maxParticipants,
+        isPublic: this.evento.isPublic,
+        linksRelevantes: this.evento.linksRelevantes || '',
+      };
+      this.isEditModalVisible = true;
+    },
+    closeEditModal() {
+      this.isEditModalVisible = false;
+    },
+    async handleUpdateEvent() {
+      this.isProcessingUpdate = true;
+      const payload = {};
+      const originalEvent = {
+        title: this.evento.titulo,
+        description: this.evento.descricao,
+        location: this.evento.localizacao,
+        eventType: this.evento.tipoEvento,
+        eventDate: this.evento.data,
+        eventTime: this.evento.hora,
+        maxParticipants: this.evento.maxParticipants,
+        isPublic: this.evento.isPublic,
+        linksRelevantes: this.evento.linksRelevantes || '',
+      };
+
+      // Compara cada campo e adiciona ao payload se for diferente
+      for (const key in this.editableEventData) {
+        if (this.editableEventData[key] !== originalEvent[key]) {
+          payload[key] = this.editableEventData[key];
+        }
+      }
+      
+      // Trata o caso de o campo de participantes ser esvaziado
+      if (payload.maxParticipants === '') {
+        payload.maxParticipants = null;
+      }
+
+      if (Object.keys(payload).length === 0) {
+        this.isProcessingUpdate = false;
+        this.closeEditModal();
+        return;
+      }
+
+      try {
+        await eventosService.patchEvent(this.evento.id, payload);
+        alert('Event updated successfully!');
+        this.closeEditModal();
+        await this.loadEvent(this.evento.id); // Recarrega os dados do evento
+      } catch (error) {
+        alert(`Error updating event: ${error.message}`);
+        console.error(error);
+      } finally {
+        this.isProcessingUpdate = false;
+      }
+    },
+  },
+  async created() {
+    // Primeiro, vai buscar os dados do utilizador autenticado à API.
+    if (authStore.isLoggedIn()) {
+        try {
+            this.currentUser = await userService.getProfile();
+        } catch (error) {
+            console.error("Failed to fetch current user profile:", error);
+        }
+    }
+
+    // Depois, carrega os dados do evento e comentários.
+    const eventId = this.$route.params.id;
+    await this.loadEvent(eventId);
+    await this.loadComments(eventId);
+    if (this.isLoggedIn) {
+        await this.loadUserStatus(eventId);
+    }
+  },
 };
 </script>
