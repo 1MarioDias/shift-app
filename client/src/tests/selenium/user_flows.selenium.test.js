@@ -28,12 +28,10 @@ describe('Testes de Usabilidade (E2E) - Fluxos do Utilizador', () => {
     it('Deve permitir que um novo utilizador se registe com sucesso', async () => {
         await driver.get('http://localhost:5173/login');
 
-        // Gera um email único para garantir que o teste não falha por email duplicado
         const uniqueEmail = `testuser_${Date.now()}@example.com`;
 
         await driver.findElement(By.xpath("//button[contains(., 'Register')]")).click();
-        // NOTA: Os seletores 'register-username', 'register-email', etc.,
-        // devem corresponder aos IDs ou nomes dos seus campos no formulário de registo.
+
         await driver.findElement(By.id('register-username')).sendKeys('Test User Selenium');
         await driver.findElement(By.id('register-email')).sendKeys(uniqueEmail);
         await driver.findElement(By.id('register-password')).sendKeys('password123');
