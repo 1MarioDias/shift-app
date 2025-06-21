@@ -400,7 +400,7 @@ export default {
       if (confirm(`Are you sure you want to delete event ID ${eventId}? This action cannot be undone.`)) {
         this.isDeleting = eventId;
         try {
-          await eventosService.deleteAdminEvent(eventId); 
+          await eventosService.deleteEvent(eventId); 
           this.showNotification(`Event ID ${eventId} deleted successfully.`, 'success');
           this.fetchEvents(); 
         } catch (err) {
