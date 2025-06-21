@@ -127,8 +127,15 @@ describe('Testes de Integração para as Rotas de Comentários', () => {
         });
 
         it('Deve permitir que um admin apague o comentário de qualquer utilizador', async () => {
+            const commentRes = await request(app)
+                .post('/events/12/comments')
+                .set('Authorization', `Bearer ${userToken}`)
+                .send({ text: 'Comentário para apagar' });
+            
+            const commentId = commentRes.body.commentId;
+            
             const res = await request(app)
-                .delete('/comments/17')
+                .delete(`/comments/${commentId}`)
                 .set('Authorization', `Bearer ${adminToken}`);
             expect(res.statusCode).toEqual(204);
         });
